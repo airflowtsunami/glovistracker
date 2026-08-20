@@ -47,47 +47,39 @@
   .header {
     position: absolute;
     z-index: 1000;
-    top: 12px;
-    left: 12px;
-    background: rgba(5, 16, 27, 0.92);
-    padding: 11px 14px;
-    border-radius: 11px;
+    top: 10px;
+    left: 10px;
+    background: rgba(5, 16, 27, 0.94);
+    padding: 10px 13px;
+    border-radius: 10px;
     box-shadow: 0 5px 20px rgba(0,0,0,.35);
-    max-width: calc(100% - 24px);
+    max-width: calc(100% - 20px);
   }
 
   .header h2 {
-    margin: 0 0 4px 0;
-    font-size: 19px;
+    margin: 0 0 3px 0;
+    font-size: 18px;
   }
 
   .header .sub {
     color: #9db0c3;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   #aisHeadline {
     position: absolute;
     z-index: 1001;
-    top: 82px;
-    left: 12px;
-    right: 12px;
-    background: rgba(0, 194, 255, 0.93);
+    top: 76px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0, 194, 255, 0.94);
     color: #00121f;
-    padding: 9px 12px;
+    padding: 8px 11px;
     border-radius: 9px;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.35;
     text-decoration: none;
     box-shadow: 0 4px 15px rgba(0,0,0,.3);
-  }
-
-  #aisHeadline strong {
-    font-weight: 800;
-  }
-
-  #aisHeadline .estimate {
-    font-weight: 700;
   }
 
   #controls {
@@ -96,30 +88,27 @@
     background: #0c1d2d;
     border-top: 1px solid #21384b;
     padding:
-      11px
-      max(16px, env(safe-area-inset-right))
-      max(12px, env(safe-area-inset-bottom))
-      max(16px, env(safe-area-inset-left));
+      10px
+      max(15px, env(safe-area-inset-right))
+      max(11px, env(safe-area-inset-bottom))
+      max(15px, env(safe-area-inset-left));
   }
 
   #dateDisplay {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 650;
-    color: #fff;
   }
 
   #status {
     margin-top: 3px;
-    font-size: 12px;
+    font-size: 11px;
     color: #8fa8bd;
     line-height: 1.35;
   }
 
   #slider {
-    display: block;
     width: 100%;
-    max-width: 100%;
-    margin: 13px 0 7px;
+    margin: 12px 0 6px;
     accent-color: #2e9fff;
   }
 
@@ -135,31 +124,27 @@
     display: flex;
     gap: 7px;
     flex-wrap: wrap;
-    margin-top: 9px;
+    margin-top: 8px;
   }
 
   button {
     border: 0;
     border-radius: 7px;
-    padding: 8px 11px;
+    padding: 7px 10px;
     cursor: pointer;
     background: #1d75b9;
     color: white;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   button:hover {
     background: #2e95dd;
   }
 
-  button:active {
-    transform: translateY(1px);
-  }
-
   .ship-icon {
-    font-size: 33px;
-    filter: drop-shadow(0 3px 4px rgba(0,0,0,.6));
+    font-size: 34px;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.7));
   }
 
   .port-label {
@@ -179,11 +164,20 @@
     font-weight: 800;
   }
 
+  .current-label {
+    background: #ff6b35;
+    color: white;
+    border: 1px solid #8c2d0d;
+    border-radius: 5px;
+    padding: 3px 7px;
+    font-weight: 800;
+  }
+
   .ais-pulse {
     width: 20px;
     height: 20px;
     background: #ffd400;
-    border: 3px solid #ffffff;
+    border: 3px solid white;
     border-radius: 50%;
     box-shadow:
       0 0 0 0 rgba(255, 212, 0, 0.75),
@@ -211,38 +205,29 @@
     }
   }
 
-  .leaflet-tooltip {
-    box-shadow: none;
-  }
-
   @media (max-width: 600px) {
     .header {
-      top: 7px;
-      left: 7px;
-      right: 7px;
+      top: 6px;
+      left: 6px;
+      right: 6px;
       max-width: none;
-      padding: 8px 10px;
+      padding: 7px 9px;
     }
 
     .header h2 {
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .header .sub {
-      font-size: 10px;
+      font-size: 9px;
     }
 
     #aisHeadline {
-      top: 58px;
-      left: 7px;
-      right: 7px;
+      top: 53px;
+      left: 6px;
+      right: 6px;
       padding: 6px 8px;
       font-size: 10px;
-      line-height: 1.3;
-    }
-
-    #controls {
-      padding-top: 8px;
     }
 
     #dateDisplay {
@@ -254,13 +239,13 @@
     }
 
     .sliderLabels {
-      font-size: 9px;
+      font-size: 8px;
     }
 
     button {
+      flex: 1 1 auto;
       font-size: 11px;
       padding: 7px 8px;
-      flex: 1 1 auto;
     }
   }
 </style>
@@ -301,7 +286,7 @@
   >
 
   <div class="sliderLabels">
-    <span>3 Aug · Kobe</span>
+    <span>11 Aug · Last AIS</span>
     <span>22 Aug · Suva</span>
     <span>31 Aug · Auckland</span>
   </div>
@@ -318,13 +303,13 @@
 
 <script>
 
-// ---------------------------------------------------
+// --------------------------------------------------
 // MAP
-// ---------------------------------------------------
+// --------------------------------------------------
 
 const map = L.map("map", {
   zoomControl: true
-}).setView([-11, 158], 4);
+}).setView([-5, 155], 4);
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -335,58 +320,45 @@ L.tileLayer(
 ).addTo(map);
 
 
-// ---------------------------------------------------
-// VOYAGE ROUTE
-// ---------------------------------------------------
+// --------------------------------------------------
+// FIXED DESTINATIONS
+// --------------------------------------------------
 
-const route = [
+const SUVA = {
+  name: "Suva",
+  lat: -18.1416,
+  lng: 178.4419,
+  time: new Date("2026-08-22T17:30:00+12:00")
+};
 
-  {
-    name: "Kobe",
-    lat: 34.69,
-    lng: 135.19,
-    time: new Date("2026-08-03T12:00:00+09:00")
-  },
-
-  {
-    name: "Suva",
-    lat: -18.1416,
-    lng: 178.4419,
-    time: new Date("2026-08-22T17:30:00+12:00")
-  },
-
-  {
-    name: "Auckland",
-    lat: -36.8406,
-    lng: 174.7850,
-    time: new Date("2026-08-31T00:00:00+12:00")
-  }
-
-];
+const AUCKLAND = {
+  name: "Auckland",
+  lat: -36.8406,
+  lng: 174.7850,
+  time: new Date("2026-08-31T00:00:00+12:00")
+};
 
 
-// ---------------------------------------------------
-// FALLBACK AIS POINT
-//
-// Used only if the automatic lookup fails.
-// ---------------------------------------------------
+// --------------------------------------------------
+// FALLBACK LAST AIS
+// --------------------------------------------------
 
 let latestAIS = {
   lat: 33.86239,
   lng: 134.99467,
+  time: new Date("2026-08-11T11:01:00+09:00"),
   reported: "11 Aug 2026 11:01",
   speed: 13.6,
   course: 161.5,
-  source: "fallback public AIS"
+  source: "fallback"
 };
 
 
-// ---------------------------------------------------
+// --------------------------------------------------
 // PORT MARKERS
-// ---------------------------------------------------
+// --------------------------------------------------
 
-route.forEach(point => {
-
+function addPortMarker(point) {
   L.circleMarker(
     [point.lat, point.lng],
     {
@@ -406,32 +378,15 @@ route.forEach(point => {
       className: "port-label"
     }
   );
+}
 
-});
-
-
-// ---------------------------------------------------
-// FULL ROUTE
-// ---------------------------------------------------
-
-const fullRoute = route.map(
-  point => [point.lat, point.lng]
-);
-
-L.polyline(
-  fullRoute,
-  {
-    color: "#469fe1",
-    weight: 3,
-    opacity: 0.48,
-    dashArray: "8 8"
-  }
-).addTo(map);
+addPortMarker(SUVA);
+addPortMarker(AUCKLAND);
 
 
-// ---------------------------------------------------
+// --------------------------------------------------
 // AIS MARKER
-// ---------------------------------------------------
+// --------------------------------------------------
 
 const aisIcon = L.divIcon({
   html: '<div class="ais-pulse"></div>',
@@ -447,9 +402,8 @@ const aisMarker = L.marker(
     zIndexOffset: 3000
   }
 )
-.addTo(map);
-
-aisMarker.bindTooltip(
+.addTo(map)
+.bindTooltip(
   "Last public AIS",
   {
     permanent: true,
@@ -460,31 +414,51 @@ aisMarker.bindTooltip(
 );
 
 
-// ---------------------------------------------------
-// SHIP ICON
-// ---------------------------------------------------
+// --------------------------------------------------
+// MOVING BOAT
+// --------------------------------------------------
 
 const shipIcon = L.divIcon({
   html: '<div class="ship-icon">🚢</div>',
   className: "",
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
+  iconSize: [42, 42],
+  iconAnchor: [21, 21]
 });
 
 const ship = L.marker(
-  [route[0].lat, route[0].lng],
+  [latestAIS.lat, latestAIS.lng],
   {
     icon: shipIcon,
-    zIndexOffset: 2000
+    zIndexOffset: 4000
+  }
+)
+.addTo(map)
+.bindTooltip(
+  "Estimated current position",
+  {
+    permanent: true,
+    direction: "right",
+    offset: [18, 0],
+    className: "current-label"
+  }
+);
+
+
+// --------------------------------------------------
+// ROUTE LINES
+// --------------------------------------------------
+
+let futureRoute = L.polyline(
+  [],
+  {
+    color: "#469fe1",
+    weight: 3,
+    opacity: 0.5,
+    dashArray: "8 8"
   }
 ).addTo(map);
 
-
-// ---------------------------------------------------
-// COMPLETED ROUTE
-// ---------------------------------------------------
-
-const travelledLine = L.polyline(
+let travelledLine = L.polyline(
   [],
   {
     color: "#00c2ff",
@@ -494,170 +468,165 @@ const travelledLine = L.polyline(
 ).addTo(map);
 
 
-// ---------------------------------------------------
-// DATE RANGE
-// ---------------------------------------------------
-
-const startTime =
-  route[0].time.getTime();
-
-const endTime =
-  route[route.length - 1].time.getTime();
-
-const HOURS =
-  Math.round(
-    (endTime - startTime) /
-    3600000
-  );
-
-const slider =
-  document.getElementById("slider");
-
-slider.max = HOURS;
-
-
-// ---------------------------------------------------
+// --------------------------------------------------
 // INTERPOLATION
-// ---------------------------------------------------
+// --------------------------------------------------
 
 function interpolate(a, b, fraction) {
-
   return {
-    lat:
-      a.lat +
-      (b.lat - a.lat) * fraction,
-
-    lng:
-      a.lng +
-      (b.lng - a.lng) * fraction
+    lat: a.lat + (b.lat - a.lat) * fraction,
+    lng: a.lng + (b.lng - a.lng) * fraction
   };
 }
 
 
-function getPosition(time) {
+// --------------------------------------------------
+// POSITION FOR ANY DATE
+// --------------------------------------------------
 
-  if (time <= route[0].time) {
+function getEstimatedPosition(time) {
+
+  const aisTime = latestAIS.time;
+  const suvaTime = SUVA.time;
+  const aucklandTime = AUCKLAND.time;
+
+  if (time <= aisTime) {
     return {
-      ...route[0],
-      leg: 0,
-      fraction: 0
+      lat: latestAIS.lat,
+      lng: latestAIS.lng,
+      leg: "AIS"
     };
   }
 
-  if (time >= route[route.length - 1].time) {
+  if (time <= suvaTime) {
+
+    const fraction =
+      (time - aisTime) /
+      (suvaTime - aisTime);
+
+    const p = interpolate(
+      latestAIS,
+      SUVA,
+      fraction
+    );
+
     return {
-      ...route[route.length - 1],
-      leg: route.length - 2,
-      fraction: 1
+      ...p,
+      leg: "AIS_TO_SUVA"
     };
   }
 
-  for (let i = 0; i < route.length - 1; i++) {
+  if (time <= aucklandTime) {
 
-    const a = route[i];
-    const b = route[i + 1];
+    const fraction =
+      (time - suvaTime) /
+      (aucklandTime - suvaTime);
 
-    if (time >= a.time && time <= b.time) {
+    const p = interpolate(
+      SUVA,
+      AUCKLAND,
+      fraction
+    );
 
-      const fraction =
-        (time - a.time) /
-        (b.time - a.time);
-
-      const position =
-        interpolate(a, b, fraction);
-
-      return {
-        ...position,
-        leg: i,
-        fraction: fraction
-      };
-    }
+    return {
+      ...p,
+      leg: "SUVA_TO_AUCKLAND"
+    };
   }
+
+  return {
+    lat: AUCKLAND.lat,
+    lng: AUCKLAND.lng,
+    leg: "AUCKLAND"
+  };
 }
 
 
-// ---------------------------------------------------
-// UPDATE MAP FOR SLIDER DATE
-// ---------------------------------------------------
+// --------------------------------------------------
+// SLIDER RANGE
+// --------------------------------------------------
+
+const slider =
+  document.getElementById("slider");
+
+function updateSliderRange() {
+
+  const start =
+    latestAIS.time.getTime();
+
+  const end =
+    AUCKLAND.time.getTime();
+
+  const totalHours =
+    Math.round(
+      (end - start) /
+      3600000
+    );
+
+  slider.min = 0;
+  slider.max = totalHours;
+}
+
+
+// --------------------------------------------------
+// DISPLAY DATE
+// --------------------------------------------------
+
+const dateFormat =
+  new Intl.DateTimeFormat(
+    "en-NZ",
+    {
+      timeZone: "Pacific/Auckland",
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit"
+    }
+  );
+
+
+// --------------------------------------------------
+// UPDATE MAP
+// --------------------------------------------------
 
 function updateVoyage(hours) {
 
   const selected =
     new Date(
-      startTime +
+      latestAIS.time.getTime() +
       hours * 3600000
     );
 
   const p =
-    getPosition(selected);
+    getEstimatedPosition(selected);
 
   ship.setLatLng(
     [p.lat, p.lng]
   );
 
+  document.getElementById(
+    "dateDisplay"
+  ).textContent =
+    dateFormat.format(selected);
 
-  const travelled = [];
 
-  for (let i = 0; i <= p.leg; i++) {
-    travelled.push(
-      [
-        route[i].lat,
-        route[i].lng
-      ]
-    );
+  let status = "";
+
+  if (p.leg === "AIS") {
+    status = "Last real public AIS position";
   }
 
-  travelled.push(
-    [p.lat, p.lng]
-  );
+  if (p.leg === "AIS_TO_SUVA") {
+    status = "Estimated position · last AIS → Suva";
+  }
 
-  travelledLine.setLatLngs(
-    travelled
-  );
+  if (p.leg === "SUVA_TO_AUCKLAND") {
+    status = "Estimated position · Suva → Auckland";
+  }
 
-
-  const dateFormat =
-    new Intl.DateTimeFormat(
-      "en-NZ",
-      {
-        timeZone: "Pacific/Auckland",
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit"
-      }
-    );
-
-  document
-    .getElementById("dateDisplay")
-    .textContent =
-      dateFormat.format(selected);
-
-
-  let status;
-
-  if (
-    selected >=
-    route[route.length - 1].time
-  ) {
-
-    status =
-      "📍 Auckland — scheduled arrival";
-
-  } else {
-
-    const from =
-      route[p.leg].name;
-
-    const to =
-      route[p.leg + 1].name;
-
-    status =
-      "Estimated voyage position · " +
-      from +
-      " → " +
-      to;
+  if (p.leg === "AUCKLAND") {
+    status = "📍 Auckland — scheduled arrival";
   }
 
 
@@ -671,20 +640,223 @@ function updateVoyage(hours) {
     "°" +
     (p.lng < 0 ? "W" : "E");
 
-  document
-    .getElementById("status")
-    .textContent =
-      status +
-      " · " +
-      latitude +
-      ", " +
-      longitude;
+  document.getElementById(
+    "status"
+  ).textContent =
+    status +
+    " · " +
+    latitude +
+    ", " +
+    longitude;
+
+
+  // -----------------------------------------------
+  // ROUTE COLOURS
+  // -----------------------------------------------
+
+  if (p.leg === "AIS_TO_SUVA") {
+
+    travelledLine.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [p.lat, p.lng]
+    ]);
+
+    futureRoute.setLatLngs([
+      [p.lat, p.lng],
+      [SUVA.lat, SUVA.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+  }
+
+  else if (p.leg === "SUVA_TO_AUCKLAND") {
+
+    travelledLine.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [SUVA.lat, SUVA.lng],
+      [p.lat, p.lng]
+    ]);
+
+    futureRoute.setLatLngs([
+      [p.lat, p.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+  }
+
+  else if (p.leg === "AUCKLAND") {
+
+    travelledLine.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [SUVA.lat, SUVA.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+    futureRoute.setLatLngs([]);
+
+  }
+
+  else {
+
+    travelledLine.setLatLngs([
+      [latestAIS.lat, latestAIS.lng]
+    ]);
+
+    futureRoute.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [SUVA.lat, SUVA.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+  }
 }
 
 
-// ---------------------------------------------------
-// AUTOMATIC PUBLIC AIS LOOKUP
-// ---------------------------------------------------
+// --------------------------------------------------
+// TODAY
+// --------------------------------------------------
+
+function goToday() {
+
+  const now =
+    new Date();
+
+  let hours =
+    Math.round(
+      (
+        now.getTime() -
+        latestAIS.time.getTime()
+      ) /
+      3600000
+    );
+
+  hours =
+    Math.max(
+      0,
+      Math.min(
+        Number(slider.max),
+        hours
+      )
+    );
+
+  slider.value =
+    hours;
+
+  updateVoyage(hours);
+}
+
+
+// --------------------------------------------------
+// +7 DAYS
+// --------------------------------------------------
+
+function goPlus7() {
+
+  const target =
+    new Date(
+      Date.now() +
+      7 * 24 * 3600000
+    );
+
+  let hours =
+    Math.round(
+      (
+        target.getTime() -
+        latestAIS.time.getTime()
+      ) /
+      3600000
+    );
+
+  hours =
+    Math.max(
+      0,
+      Math.min(
+        Number(slider.max),
+        hours
+      )
+    );
+
+  slider.value =
+    hours;
+
+  updateVoyage(hours);
+}
+
+
+// --------------------------------------------------
+// PLAY
+// --------------------------------------------------
+
+let timer = null;
+
+function playVoyage() {
+
+  const button =
+    document.getElementById("playButton");
+
+  if (timer) {
+
+    clearInterval(timer);
+    timer = null;
+
+    button.textContent =
+      "▶ Play voyage";
+
+    return;
+  }
+
+  slider.value = 0;
+  updateVoyage(0);
+
+  button.textContent =
+    "⏸ Pause";
+
+  timer =
+    setInterval(
+      () => {
+
+        let hours =
+          Number(slider.value) + 3;
+
+        if (
+          hours >
+          Number(slider.max)
+        ) {
+
+          clearInterval(timer);
+          timer = null;
+
+          button.textContent =
+            "▶ Play voyage";
+
+          return;
+        }
+
+        slider.value = hours;
+        updateVoyage(hours);
+
+      },
+      40
+    );
+}
+
+
+// --------------------------------------------------
+// SLIDER EVENT
+// --------------------------------------------------
+
+slider.addEventListener(
+  "input",
+  () => {
+    updateVoyage(
+      Number(slider.value)
+    );
+  }
+);
+
+
+// --------------------------------------------------
+// PUBLIC AIS LOOKUP
+// --------------------------------------------------
 
 const VESSEL_PAGE =
   "https://www.myshiptracking.com/vessels/glovis-century-mmsi-441200000-imo-9590589";
@@ -720,10 +892,6 @@ async function getLatestAIS() {
     await response.text();
 
 
-  // -------------------------------
-  // Extract exact coordinates
-  // -------------------------------
-
   const positionMatch =
     html.match(
       /coordinates\s+([-\d.]+)°\s*\/\s*([-\d.]+)°\s+as reported on\s+([\d-]+\s+[\d:]+)/i
@@ -731,7 +899,7 @@ async function getLatestAIS() {
 
   if (!positionMatch) {
     throw new Error(
-      "Could not find AIS coordinates in public page"
+      "AIS coordinates not found"
     );
   }
 
@@ -741,54 +909,56 @@ async function getLatestAIS() {
   const lng =
     parseFloat(positionMatch[2]);
 
-  const reported =
+  const reportedRaw =
     positionMatch[3];
 
-
-  // -------------------------------
-  // Extract speed
-  // -------------------------------
 
   const speedMatch =
     html.match(
       /current speed is\s+([\d.]+)\s+Knots/i
     );
 
-  const speed =
-    speedMatch
-      ? parseFloat(speedMatch[1])
-      : null;
-
-
-  // -------------------------------
-  // Extract course
-  // -------------------------------
-
   const courseMatch =
     html.match(
       /Course[\s\S]{0,200}?([\d.]+)°/i
     );
 
-  const course =
-    courseMatch
-      ? parseFloat(courseMatch[1])
-      : null;
+
+  /*
+    MyShipTracking's displayed timestamp is
+    treated here as Japan local time for the
+    last fix around Japan.
+  */
+
+  const time =
+    new Date(
+      reportedRaw
+        .replace(" ", "T") +
+      ":00+09:00"
+    );
 
 
   return {
     lat,
     lng,
-    reported,
-    speed,
-    course,
+    time,
+    reported: reportedRaw,
+    speed:
+      speedMatch
+        ? parseFloat(speedMatch[1])
+        : null,
+    course:
+      courseMatch
+        ? parseFloat(courseMatch[1])
+        : null,
     source: "MyShipTracking"
   };
 }
 
 
-// ---------------------------------------------------
+// --------------------------------------------------
 // REFRESH AIS
-// ---------------------------------------------------
+// --------------------------------------------------
 
 async function refreshAIS() {
 
@@ -811,14 +981,10 @@ async function refreshAIS() {
       ais;
 
 
-    // Move yellow marker
-
-    aisMarker.setLatLng(
-      [
-        ais.lat,
-        ais.lng
-      ]
-    );
+    aisMarker.setLatLng([
+      ais.lat,
+      ais.lng
+    ]);
 
 
     aisMarker.setTooltipContent(
@@ -827,44 +993,59 @@ async function refreshAIS() {
     );
 
 
-    // Build headline
-
-    let text =
-      `🚢 <strong>Latest public AIS:</strong>
+    let headlineText =
+      `🚢 <strong>Last public AIS:</strong>
       ${ais.reported}
-      · ${ais.lat.toFixed(4)}°,
-      ${ais.lng.toFixed(4)}°`;
+      · ${ais.lat.toFixed(5)}°,
+      ${ais.lng.toFixed(5)}°`;
 
 
-    if (
-      ais.speed !== null
-    ) {
-
-      text +=
+    if (ais.speed !== null) {
+      headlineText +=
         ` · ${ais.speed} kn`;
     }
 
 
-    if (
-      ais.course !== null
-    ) {
-
-      text +=
+    if (ais.course !== null) {
+      headlineText +=
         ` · course ${ais.course}°`;
     }
 
 
-    text +=
-      ` · <span class="estimate">
-      onward position estimated
-      </span>`;
+    headlineText +=
+      ` · <strong>orange boat = estimated current position</strong>`;
 
 
     headline.innerHTML =
-      text;
+      headlineText;
 
 
-  } catch (error) {
+    updateSliderRange();
+
+    goToday();
+
+
+    futureRoute.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [SUVA.lat, SUVA.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+
+    map.fitBounds(
+      L.latLngBounds([
+        [latestAIS.lat, latestAIS.lng],
+        [SUVA.lat, SUVA.lng],
+        [AUCKLAND.lat, AUCKLAND.lng]
+      ]),
+      {
+        padding: [45,45]
+      }
+    );
+
+  }
+
+  catch (error) {
 
     console.error(
       "AIS lookup failed:",
@@ -872,198 +1053,44 @@ async function refreshAIS() {
     );
 
 
-    // Keep fallback marker
-
-    aisMarker.setLatLng(
-      [
-        latestAIS.lat,
-        latestAIS.lng
-      ]
-    );
-
-
     headline.innerHTML =
-      `⚠️ <strong>Live public AIS lookup failed.</strong>
-      Using last known fallback:
+      `⚠️ <strong>Public AIS refresh failed.</strong>
+      Using fallback last AIS:
       ${latestAIS.reported}
-      · ${latestAIS.lat.toFixed(4)}°,
-      ${latestAIS.lng.toFixed(4)}°
-      · <span class="estimate">
-      estimated onward position shown
-      </span>`;
-  }
-}
+      · ${latestAIS.lat.toFixed(5)}°,
+      ${latestAIS.lng.toFixed(5)}°
+      · orange boat = estimated current position`;
 
 
-// ---------------------------------------------------
-// SLIDER
-// ---------------------------------------------------
+    updateSliderRange();
 
-slider.addEventListener(
-  "input",
-  () => {
-    updateVoyage(
-      Number(slider.value)
+    goToday();
+
+
+    futureRoute.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [SUVA.lat, SUVA.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+
+    map.fitBounds(
+      L.latLngBounds([
+        [latestAIS.lat, latestAIS.lng],
+        [SUVA.lat, SUVA.lng],
+        [AUCKLAND.lat, AUCKLAND.lng]
+      ]),
+      {
+        padding: [45,45]
+      }
     );
   }
-);
-
-
-// ---------------------------------------------------
-// TODAY
-// ---------------------------------------------------
-
-function goToday() {
-
-  const now =
-    new Date();
-
-  let hours =
-    Math.round(
-      (
-        now.getTime() -
-        startTime
-      ) /
-      3600000
-    );
-
-  hours =
-    Math.max(
-      0,
-      Math.min(
-        HOURS,
-        hours
-      )
-    );
-
-  slider.value =
-    hours;
-
-  updateVoyage(
-    hours
-  );
 }
 
 
-// ---------------------------------------------------
-// +7 DAYS
-// ---------------------------------------------------
-
-function goPlus7() {
-
-  const now =
-    new Date();
-
-  const target =
-    new Date(
-      now.getTime() +
-      7 * 24 * 3600000
-    );
-
-  let hours =
-    Math.round(
-      (
-        target.getTime() -
-        startTime
-      ) /
-      3600000
-    );
-
-  hours =
-    Math.max(
-      0,
-      Math.min(
-        HOURS,
-        hours
-      )
-    );
-
-  slider.value =
-    hours;
-
-  updateVoyage(
-    hours
-  );
-}
-
-
-// ---------------------------------------------------
-// PLAY
-// ---------------------------------------------------
-
-let timer = null;
-
-function playVoyage() {
-
-  const button =
-    document.getElementById(
-      "playButton"
-    );
-
-  if (timer) {
-
-    clearInterval(timer);
-
-    timer =
-      null;
-
-    button.textContent =
-      "▶ Play voyage";
-
-    return;
-  }
-
-  slider.value =
-    0;
-
-  updateVoyage(
-    0
-  );
-
-  button.textContent =
-    "⏸ Pause";
-
-
-  timer =
-    setInterval(
-      () => {
-
-        let hours =
-          Number(slider.value) +
-          3;
-
-        if (
-          hours >
-          HOURS
-        ) {
-
-          clearInterval(timer);
-
-          timer =
-            null;
-
-          button.textContent =
-            "▶ Play voyage";
-
-          return;
-        }
-
-        slider.value =
-          hours;
-
-        updateVoyage(
-          hours
-        );
-
-      },
-      35
-    );
-}
-
-
-// ---------------------------------------------------
-// MOBILE RESIZE FIX
-// ---------------------------------------------------
+// --------------------------------------------------
+// MOBILE FIX
+// --------------------------------------------------
 
 function resizeMap() {
 
@@ -1086,28 +1113,24 @@ window.addEventListener(
 );
 
 
-// ---------------------------------------------------
-// INITIAL VIEW
-// ---------------------------------------------------
+// --------------------------------------------------
+// START
+// --------------------------------------------------
 
-map.fitBounds(
-  L.latLngBounds(
-    fullRoute
-  ),
-  {
-    padding:
-      [45, 45]
-  }
-);
+updateSliderRange();
+
+futureRoute.setLatLngs([
+  [latestAIS.lat, latestAIS.lng],
+  [SUVA.lat, SUVA.lng],
+  [AUCKLAND.lat, AUCKLAND.lng]
+]);
 
 goToday();
 
-
-// ---------------------------------------------------
-// LOAD AIS NOW + REFRESH EVERY 10 MINUTES
-// ---------------------------------------------------
-
 refreshAIS();
+
+
+// Try for a newer public AIS fix every 10 minutes
 
 setInterval(
   refreshAIS,
