@@ -2,24 +2,45 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
+>
+
 <title>GLOVIS CENTURY – Tesla Voyage Tracker</title>
 
-<link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
 
 <style>
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
 
+  html,
   body {
     margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     background: #08131f;
     color: white;
   }
 
   #map {
-    height: calc(100vh - 155px);
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
   }
 
@@ -28,10 +49,11 @@
     z-index: 1000;
     top: 18px;
     left: 18px;
-    background: rgba(5,16,27,.91);
+    background: rgba(5, 16, 27, 0.91);
     padding: 14px 18px;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0,0,0,.3);
+    max-width: calc(100% - 36px);
   }
 
   .header h2 {
@@ -45,51 +67,71 @@
   }
 
   #controls {
-    height: 155px;
+    flex: 0 0 auto;
+    width: 100%;
     background: #0c1d2d;
     border-top: 1px solid #21384b;
-    padding: 15px 24px;
+
+    padding:
+      12px
+      max(16px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
   }
 
   #dateDisplay {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 650;
     color: #fff;
   }
 
   #status {
     margin-top: 3px;
-    font-size: 13px;
+    font-size: 12px;
     color: #8fa8bd;
+    line-height: 1.35;
   }
 
   #slider {
+    display: block;
     width: 100%;
-    margin: 18px 0 8px;
+    max-width: 100%;
+    margin: 14px 0 8px;
     accent-color: #2e9fff;
   }
 
   .sliderLabels {
     display: flex;
     justify-content: space-between;
+    gap: 8px;
     color: #8299ad;
-    font-size: 11px;
+    font-size: 10px;
+  }
+
+  .buttonRow {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-top: 9px;
   }
 
   button {
-    margin-top: 10px;
-    margin-right: 8px;
     border: 0;
     border-radius: 7px;
-    padding: 8px 13px;
+    padding: 8px 11px;
     cursor: pointer;
     background: #1d75b9;
     color: white;
     font-weight: 600;
+    font-size: 13px;
   }
 
   button:hover {
     background: #2e95dd;
+  }
+
+  button:active {
+    transform: translateY(1px);
   }
 
   .ship-icon {
@@ -108,6 +150,46 @@
   .leaflet-tooltip {
     box-shadow: none;
   }
+
+  @media (max-width: 600px) {
+    .header {
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      max-width: none;
+      padding: 9px 11px;
+    }
+
+    .header h2 {
+      font-size: 16px;
+    }
+
+    .header .sub {
+      font-size: 11px;
+    }
+
+    #controls {
+      padding-top: 9px;
+    }
+
+    #dateDisplay {
+      font-size: 15px;
+    }
+
+    #status {
+      font-size: 11px;
+    }
+
+    .sliderLabels {
+      font-size: 9px;
+    }
+
+    button {
+      font-size: 12px;
+      padding: 7px 9px;
+      flex: 1 1 auto;
+    }
+  }
 </style>
 </head>
 
@@ -115,12 +197,15 @@
 
 <div class="header">
   <h2>🚢 GLOVIS CENTURY</h2>
-  <div class="sub">IMO 9590589 · Estimated Tesla voyage tracker</div>
+  <div class="sub">
+    IMO 9590589 · Estimated Tesla voyage tracker
+  </div>
 </div>
 
 <div id="map"></div>
 
 <div id="controls">
+
   <div id="dateDisplay"></div>
   <div id="status"></div>
 
@@ -130,7 +215,8 @@
     min="0"
     max="672"
     value="0"
-    step="1">
+    step="1"
+  >
 
   <div class="sliderLabels">
     <span>3 Aug · Kobe</span>
@@ -138,9 +224,12 @@
     <span>31 Aug · Auckland</span>
   </div>
 
-  <button onclick="goToday()">Today</button>
-  <button onclick="goPlus7()">+ 7 days</button>
-  <button onclick="playVoyage()">▶ Play voyage</button>
+  <div class="buttonRow">
+    <button onclick="goToday()">Today</button>
+    <button onclick="goPlus7()">+7 days</button>
+    <button onclick="playVoyage()">▶ Play voyage</button>
+  </div>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -151,15 +240,15 @@
 // MAP
 // ---------------------------------------------------
 
-const map = L.map('map', {
+const map = L.map("map", {
   zoomControl: true
 }).setView([-11, 158], 4);
 
 L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 10,
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: "&copy; OpenStreetMap contributors"
   }
 ).addTo(map);
 
@@ -167,8 +256,8 @@ L.tileLayer(
 // ---------------------------------------------------
 // VOYAGE WAYPOINTS
 //
-// These are schedule/route anchors.
-// Travel between them is interpolated.
+// Positions between these known/planned points
+// are estimated using interpolation.
 // ---------------------------------------------------
 
 const route = [
@@ -201,18 +290,21 @@ const route = [
 // PORT MARKERS
 // ---------------------------------------------------
 
-route.forEach(p => {
+route.forEach(port => {
 
-  L.circleMarker([p.lat, p.lng], {
-    radius: 6,
-    color: "#ffffff",
-    weight: 2,
-    fillColor: "#1a89d9",
-    fillOpacity: 1
-  })
+  L.circleMarker(
+    [port.lat, port.lng],
+    {
+      radius: 6,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#1a89d9",
+      fillOpacity: 1
+    }
+  )
   .addTo(map)
   .bindTooltip(
-    p.name,
+    port.name,
     {
       permanent: true,
       direction: "top",
@@ -227,14 +319,19 @@ route.forEach(p => {
 // FULL ROUTE
 // ---------------------------------------------------
 
-const fullRoute = route.map(p => [p.lat, p.lng]);
+const fullRoute = route.map(
+  port => [port.lat, port.lng]
+);
 
-L.polyline(fullRoute, {
-  color: "#469fe1",
-  weight: 3,
-  opacity: 0.48,
-  dashArray: "8 8"
-}).addTo(map);
+L.polyline(
+  fullRoute,
+  {
+    color: "#469fe1",
+    weight: 3,
+    opacity: 0.48,
+    dashArray: "8 8"
+  }
+).addTo(map);
 
 
 // ---------------------------------------------------
@@ -244,31 +341,41 @@ L.polyline(fullRoute, {
 const shipIcon = L.divIcon({
   html: '<div class="ship-icon">🚢</div>',
   className: "",
-  iconSize: [40,40],
-  iconAnchor: [20,20]
+  iconSize: [40, 40],
+  iconAnchor: [20, 20]
 });
 
 const ship = L.marker(
   [route[0].lat, route[0].lng],
-  { icon: shipIcon }
+  {
+    icon: shipIcon
+  }
 ).addTo(map);
 
 
-// completed route
+// ---------------------------------------------------
+// COMPLETED ROUTE
+// ---------------------------------------------------
 
-const travelledLine = L.polyline([], {
-  color: "#00c2ff",
-  weight: 5,
-  opacity: 0.95
-}).addTo(map);
+const travelledLine = L.polyline(
+  [],
+  {
+    color: "#00c2ff",
+    weight: 5,
+    opacity: 0.95
+  }
+).addTo(map);
 
 
 // ---------------------------------------------------
 // DATE RANGE
 // ---------------------------------------------------
 
-const startTime = route[0].time.getTime();
-const endTime   = route[route.length-1].time.getTime();
+const startTime =
+  route[0].time.getTime();
+
+const endTime =
+  route[route.length - 1].time.getTime();
 
 const HOURS =
   Math.round(
@@ -276,7 +383,8 @@ const HOURS =
     (1000 * 60 * 60)
   );
 
-const slider = document.getElementById("slider");
+const slider =
+  document.getElementById("slider");
 
 slider.max = HOURS;
 
@@ -302,40 +410,53 @@ function interpolate(a, b, fraction) {
 
 function getPosition(time) {
 
-  if (time <= route[0].time)
+  if (time <= route[0].time) {
     return {
       ...route[0],
       leg: 0,
       fraction: 0
     };
+  }
 
-  if (time >= route[route.length-1].time)
+  if (time >= route[route.length - 1].time) {
     return {
-      ...route[route.length-1],
-      leg: route.length-2,
+      ...route[route.length - 1],
+      leg: route.length - 2,
       fraction: 1
     };
+  }
 
-
-  for (let i=0; i<route.length-1; i++) {
+  for (
+    let i = 0;
+    i < route.length - 1;
+    i++
+  ) {
 
     const a = route[i];
-    const b = route[i+1];
+    const b = route[i + 1];
 
-    if (time >= a.time && time <= b.time) {
+    if (
+      time >= a.time &&
+      time <= b.time
+    ) {
 
       const fraction =
         (time - a.time) /
         (b.time - a.time);
 
       const pos =
-        interpolate(a,b,fraction);
+        interpolate(
+          a,
+          b,
+          fraction
+        );
 
       return {
         ...pos,
         leg: i,
-        fraction
+        fraction: fraction
       };
+
     }
   }
 }
@@ -357,7 +478,7 @@ function updateVoyage(hours) {
     getPosition(selected);
 
   ship.setLatLng(
-    [p.lat,p.lng]
+    [p.lat, p.lng]
   );
 
 
@@ -365,14 +486,23 @@ function updateVoyage(hours) {
 
   const travelled = [];
 
-  for (let i=0; i<=p.leg; i++) {
+  for (
+    let i = 0;
+    i <= p.leg;
+    i++
+  ) {
+
     travelled.push(
-      [route[i].lat,route[i].lng]
+      [
+        route[i].lat,
+        route[i].lng
+      ]
     );
+
   }
 
   travelled.push(
-    [p.lat,p.lng]
+    [p.lat, p.lng]
   );
 
   travelledLine.setLatLngs(
@@ -382,30 +512,33 @@ function updateVoyage(hours) {
 
   // Date display
 
-  const format =
+  const dateFormat =
     new Intl.DateTimeFormat(
-      'en-NZ',
+      "en-NZ",
       {
-        timeZone: 'Pacific/Auckland',
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: 'numeric',
-        minute: '2-digit'
+        timeZone: "Pacific/Auckland",
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "numeric",
+        minute: "2-digit"
       }
     );
 
   document.getElementById(
     "dateDisplay"
   ).textContent =
-    format.format(selected);
+    dateFormat.format(selected);
 
 
-  // Leg status
+  // Status
 
   let status;
 
-  if (selected >= route[2].time) {
+  if (
+    selected >=
+    route[route.length - 1].time
+  ) {
 
     status =
       "📍 Auckland — scheduled arrival";
@@ -416,7 +549,7 @@ function updateVoyage(hours) {
       route[p.leg].name;
 
     const to =
-      route[p.leg+1].name;
+      route[p.leg + 1].name;
 
     status =
       "Estimated position · " +
@@ -426,18 +559,36 @@ function updateVoyage(hours) {
 
   }
 
+
+  // Approximate coordinates
+
+  const latitude =
+    Math.abs(p.lat).toFixed(2) +
+    "°" +
+    (
+      p.lat < 0
+        ? "S"
+        : "N"
+    );
+
+  const longitude =
+    Math.abs(p.lng).toFixed(2) +
+    "°" +
+    (
+      p.lng < 0
+        ? "W"
+        : "E"
+    );
+
+
   document.getElementById(
     "status"
   ).textContent =
     status +
     " · " +
-    Math.abs(p.lat).toFixed(2) +
-    "°" +
-    (p.lat < 0 ? "S" : "N") +
+    latitude +
     ", " +
-    Math.abs(p.lng).toFixed(2) +
-    "°" +
-    (p.lng < 0 ? "W" : "E");
+    longitude;
 
 }
 
@@ -449,9 +600,11 @@ function updateVoyage(hours) {
 slider.addEventListener(
   "input",
   () => {
+
     updateVoyage(
       Number(slider.value)
     );
+
   }
 );
 
@@ -465,26 +618,36 @@ function goToday() {
   const now =
     new Date();
 
-  let h =
+  let hours =
     Math.round(
-      (now.getTime() - startTime) /
+      (
+        now.getTime() -
+        startTime
+      ) /
       3600000
     );
 
-  h =
+  hours =
     Math.max(
       0,
-      Math.min(HOURS,h)
+      Math.min(
+        HOURS,
+        hours
+      )
     );
 
-  slider.value = h;
+  slider.value =
+    hours;
 
-  updateVoyage(h);
+  updateVoyage(
+    hours
+  );
+
 }
 
 
 // ---------------------------------------------------
-// PLUS SEVEN DAYS
+// PLUS 7 DAYS
 // ---------------------------------------------------
 
 function goPlus7() {
@@ -495,29 +658,41 @@ function goPlus7() {
   const target =
     new Date(
       now.getTime() +
-      7 * 24 * 3600000
-    );
-
-  let h =
-    Math.round(
-      (target.getTime() - startTime) /
+      7 *
+      24 *
       3600000
     );
 
-  h =
-    Math.max(
-      0,
-      Math.min(HOURS,h)
+  let hours =
+    Math.round(
+      (
+        target.getTime() -
+        startTime
+      ) /
+      3600000
     );
 
-  slider.value = h;
+  hours =
+    Math.max(
+      0,
+      Math.min(
+        HOURS,
+        hours
+      )
+    );
 
-  updateVoyage(h);
+  slider.value =
+    hours;
+
+  updateVoyage(
+    hours
+  );
+
 }
 
 
 // ---------------------------------------------------
-// PLAY ANIMATION
+// PLAY VOYAGE
 // ---------------------------------------------------
 
 let timer = null;
@@ -525,44 +700,90 @@ let timer = null;
 function playVoyage() {
 
   if (timer) {
+
     clearInterval(timer);
     timer = null;
     return;
+
   }
 
   slider.value = 0;
 
+  updateVoyage(0);
+
   timer =
-    setInterval(() => {
+    setInterval(
+      () => {
 
-      let h =
-        Number(slider.value) + 3;
+        let hours =
+          Number(slider.value) + 3;
 
-      if (h > HOURS) {
-        clearInterval(timer);
-        timer = null;
-        return;
-      }
+        if (
+          hours > HOURS
+        ) {
 
-      slider.value = h;
-      updateVoyage(h);
+          clearInterval(timer);
+          timer = null;
+          return;
 
-    },35);
+        }
+
+        slider.value =
+          hours;
+
+        updateVoyage(
+          hours
+        );
+
+      },
+      35
+    );
+
 }
 
 
-// start at today
+// ---------------------------------------------------
+// INITIAL VIEW
+// ---------------------------------------------------
 
 goToday();
 
-
-// fit whole journey
-
 map.fitBounds(
-  L.latLngBounds(fullRoute),
+  L.latLngBounds(
+    fullRoute
+  ),
   {
-    padding:[50,50]
+    padding: [50, 50]
   }
+);
+
+
+// ---------------------------------------------------
+// MOBILE RESIZE FIX
+//
+// Ensures Leaflet recalculates its dimensions
+// when mobile browser chrome changes size.
+// ---------------------------------------------------
+
+function resizeMap() {
+
+  setTimeout(
+    () => {
+      map.invalidateSize();
+    },
+    100
+  );
+
+}
+
+window.addEventListener(
+  "resize",
+  resizeMap
+);
+
+window.addEventListener(
+  "orientationchange",
+  resizeMap
 );
 
 </script>
