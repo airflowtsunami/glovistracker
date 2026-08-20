@@ -49,17 +49,11 @@
     z-index: 1000;
     top: 12px;
     left: 12px;
-
     background: rgba(5, 16, 27, 0.92);
     padding: 11px 14px;
-
     border-radius: 11px;
-
-    box-shadow:
-      0 5px 20px rgba(0,0,0,.35);
-
-    max-width:
-      calc(100% - 24px);
+    box-shadow: 0 5px 20px rgba(0,0,0,.35);
+    max-width: calc(100% - 24px);
   }
 
   .header h2 {
@@ -74,30 +68,18 @@
 
   #aisHeadline {
     position: absolute;
-
     z-index: 1001;
-
     top: 82px;
     left: 12px;
     right: 12px;
-
-    background:
-      rgba(0, 194, 255, 0.93);
-
+    background: rgba(0, 194, 255, 0.93);
     color: #00121f;
-
     padding: 9px 12px;
-
     border-radius: 9px;
-
     font-size: 13px;
-
     line-height: 1.35;
-
     text-decoration: none;
-
-    box-shadow:
-      0 4px 15px rgba(0,0,0,.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,.3);
   }
 
   #aisHeadline strong {
@@ -110,14 +92,9 @@
 
   #controls {
     flex: 0 0 auto;
-
     width: 100%;
-
     background: #0c1d2d;
-
-    border-top:
-      1px solid #21384b;
-
+    border-top: 1px solid #21384b;
     padding:
       11px
       max(16px, env(safe-area-inset-right))
@@ -133,66 +110,42 @@
 
   #status {
     margin-top: 3px;
-
     font-size: 12px;
-
     color: #8fa8bd;
-
     line-height: 1.35;
   }
 
   #slider {
     display: block;
-
     width: 100%;
-
     max-width: 100%;
-
-    margin:
-      13px 0 7px;
-
-    accent-color:
-      #2e9fff;
+    margin: 13px 0 7px;
+    accent-color: #2e9fff;
   }
 
   .sliderLabels {
     display: flex;
-
-    justify-content:
-      space-between;
-
+    justify-content: space-between;
     gap: 8px;
-
     color: #8299ad;
-
     font-size: 10px;
   }
 
   .buttonRow {
     display: flex;
-
     gap: 7px;
-
     flex-wrap: wrap;
-
     margin-top: 9px;
   }
 
   button {
     border: 0;
-
     border-radius: 7px;
-
     padding: 8px 11px;
-
     cursor: pointer;
-
     background: #1d75b9;
-
     color: white;
-
     font-weight: 600;
-
     font-size: 13px;
   }
 
@@ -201,67 +154,73 @@
   }
 
   button:active {
-    transform:
-      translateY(1px);
+    transform: translateY(1px);
   }
 
   .ship-icon {
     font-size: 33px;
-
-    filter:
-      drop-shadow(
-        0 3px 4px
-        rgba(0,0,0,.6)
-      );
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.6));
   }
 
   .port-label {
     background: #10283b;
-
     color: white;
-
-    border:
-      1px solid #4f7188;
-
+    border: 1px solid #4f7188;
     border-radius: 5px;
-
     padding: 2px 6px;
   }
 
   .ais-label {
-    background:
-      #ffd54a;
+    background: #ffd54a;
+    color: #111;
+    border: 1px solid #8d7415;
+    border-radius: 5px;
+    padding: 3px 7px;
+    font-weight: 800;
+  }
 
-    color:
-      #111;
+  .ais-pulse {
+    width: 20px;
+    height: 20px;
+    background: #ffd400;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 0 rgba(255, 212, 0, 0.75),
+      0 2px 8px rgba(0,0,0,.65);
+    animation: pulseAIS 1.8s infinite;
+  }
 
-    border:
-      1px solid #8d7415;
+  @keyframes pulseAIS {
+    0% {
+      box-shadow:
+        0 0 0 0 rgba(255, 212, 0, 0.75),
+        0 2px 8px rgba(0,0,0,.65);
+    }
 
-    border-radius:
-      5px;
+    70% {
+      box-shadow:
+        0 0 0 16px rgba(255, 212, 0, 0),
+        0 2px 8px rgba(0,0,0,.65);
+    }
 
-    padding:
-      2px 6px;
-
-    font-weight:
-      700;
+    100% {
+      box-shadow:
+        0 0 0 0 rgba(255, 212, 0, 0),
+        0 2px 8px rgba(0,0,0,.65);
+    }
   }
 
   .leaflet-tooltip {
     box-shadow: none;
   }
 
-
   @media (max-width: 600px) {
-
     .header {
       top: 7px;
       left: 7px;
       right: 7px;
-
       max-width: none;
-
       padding: 8px 10px;
     }
 
@@ -275,18 +234,11 @@
 
     #aisHeadline {
       top: 58px;
-
       left: 7px;
       right: 7px;
-
-      padding:
-        6px 8px;
-
-      font-size:
-        10px;
-
-      line-height:
-        1.3;
+      padding: 6px 8px;
+      font-size: 10px;
+      line-height: 1.3;
     }
 
     #controls {
@@ -307,35 +259,21 @@
 
     button {
       font-size: 11px;
-
-      padding:
-        7px 8px;
-
-      flex:
-        1 1 auto;
+      padding: 7px 8px;
+      flex: 1 1 auto;
     }
-
   }
-
 </style>
 </head>
 
-
 <body>
 
-
 <div class="header">
-
-  <h2>
-    🚢 GLOVIS CENTURY
-  </h2>
-
+  <h2>🚢 GLOVIS CENTURY</h2>
   <div class="sub">
     IMO 9590589 · Tesla voyage tracker
   </div>
-
 </div>
-
 
 <a
   id="aisHeadline"
@@ -343,32 +281,18 @@
   target="_blank"
   rel="noopener"
 >
-
-  🚢
-  <strong>
-    Last public AIS:
-  </strong>
-
+  🚢 <strong>Last public AIS:</strong>
   Philippine Sea · 13 Aug 2026
   · En route to Suva
-
-  ·
-  <span class="estimate">
-    Current position below is estimated
-  </span>
-
+  · <span class="estimate">current position is estimated</span>
 </a>
 
-
 <div id="map"></div>
-
 
 <div id="controls">
 
   <div id="dateDisplay"></div>
-
   <div id="status"></div>
-
 
   <input
     id="slider"
@@ -379,780 +303,451 @@
     step="1"
   >
 
-
   <div class="sliderLabels">
-
-    <span>
-      3 Aug · Kobe
-    </span>
-
-    <span>
-      22 Aug · Suva
-    </span>
-
-    <span>
-      31 Aug · Auckland
-    </span>
-
+    <span>3 Aug · Kobe</span>
+    <span>22 Aug · Suva</span>
+    <span>31 Aug · Auckland</span>
   </div>
 
-
   <div class="buttonRow">
-
-    <button
-      onclick="goToday()"
-    >
-      Today
-    </button>
-
-    <button
-      onclick="goPlus7()"
-    >
-      +7 days
-    </button>
-
-    <button
-      id="playButton"
-      onclick="playVoyage()"
-    >
-      ▶ Play voyage
-    </button>
-
+    <button onclick="goToday()">Today</button>
+    <button onclick="goPlus7()">+7 days</button>
+    <button id="playButton" onclick="playVoyage()">▶ Play voyage</button>
   </div>
 
 </div>
 
-
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-// ===================================================
+// ---------------------------------------------------
 // MAP
-// ===================================================
+// ---------------------------------------------------
 
-const map =
-  L.map(
-    "map",
-    {
-      zoomControl: true
-    }
-  )
-  .setView(
-    [-11, 158],
-    4
-  );
-
+const map = L.map("map", {
+  zoomControl: true
+}).setView([-11, 158], 4);
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 10,
-
-    attribution:
-      "&copy; OpenStreetMap contributors"
+    attribution: "&copy; OpenStreetMap contributors"
   }
-)
-.addTo(map);
+).addTo(map);
 
 
-
-// ===================================================
-// VOYAGE WAYPOINTS
+// ---------------------------------------------------
+// ROUTE
 //
-// IMPORTANT:
-// Locations between these points are ESTIMATES.
-// They are not live satellite AIS positions.
-// ===================================================
+// NOTE:
+// The AIS coordinate below is only an approximate
+// Philippine Sea anchor, not an exact live fix.
+// ---------------------------------------------------
 
 const route = [
 
   {
     name: "Kobe",
-
     lat: 34.69,
     lng: 135.19,
-
-    time:
-      new Date(
-        "2026-08-03T12:00:00+09:00"
-      )
+    time: new Date("2026-08-03T12:00:00+09:00")
   },
 
-
-  /*
-    Approximate last publicly reported
-    AIS region.
-
-    This point is deliberately labelled
-    as approximate because the public
-    source describes the Philippine Sea,
-    rather than providing us here with a
-    fresh live satellite fix.
-  */
-
   {
-    name:
-      "Last public AIS",
-
+    name: "Last public AIS",
     lat: 18.0,
     lng: 132.0,
-
-    time:
-      new Date(
-        "2026-08-13T12:00:00+08:00"
-      ),
-
+    time: new Date("2026-08-13T12:00:00+08:00"),
     isAIS: true
   },
 
-
   {
     name: "Suva",
-
     lat: -18.1416,
     lng: 178.4419,
-
-    time:
-      new Date(
-        "2026-08-22T17:30:00+12:00"
-      )
+    time: new Date("2026-08-22T17:30:00+12:00")
   },
-
 
   {
     name: "Auckland",
-
     lat: -36.8406,
     lng: 174.7850,
-
-    time:
-      new Date(
-        "2026-08-31T00:00:00+12:00"
-      )
+    time: new Date("2026-08-31T00:00:00+12:00")
   }
 
 ];
 
 
+// ---------------------------------------------------
+// NORMAL PORT MARKERS
+// ---------------------------------------------------
 
-// ===================================================
-// PORT / WAYPOINT MARKERS
-// ===================================================
+route.forEach(point => {
 
-route.forEach(
-  point => {
+  if (point.isAIS) {
+    return;
+  }
 
-    const isAIS =
-      point.isAIS === true;
+  L.circleMarker(
+    [point.lat, point.lng],
+    {
+      radius: 6,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#1a89d9",
+      fillOpacity: 1
+    }
+  )
+  .addTo(map)
+  .bindTooltip(
+    point.name,
+    {
+      permanent: true,
+      direction: "top",
+      className: "port-label"
+    }
+  );
+
+});
 
 
-    L.circleMarker(
-      [
-        point.lat,
-        point.lng
-      ],
-      {
-        radius:
-          isAIS ? 7 : 6,
+// ---------------------------------------------------
+// LARGE PULSING YELLOW AIS MARKER
+// ---------------------------------------------------
 
-        color:
-          "#ffffff",
+const aisPoint = route.find(point => point.isAIS);
 
-        weight:
-          2,
+const aisIcon = L.divIcon({
+  html: '<div class="ais-pulse"></div>',
+  className: "",
+  iconSize: [26, 26],
+  iconAnchor: [13, 13]
+});
 
-        fillColor:
-          isAIS
-            ? "#ffd54a"
-            : "#1a89d9",
-
-        fillOpacity:
-          1
-      }
-    )
-    .addTo(map)
-    .bindTooltip(
-      point.name,
-      {
-        permanent:
-          true,
-
-        direction:
-          "top",
-
-        className:
-          isAIS
-            ? "ais-label"
-            : "port-label"
-      }
-    );
-
+L.marker(
+  [aisPoint.lat, aisPoint.lng],
+  {
+    icon: aisIcon,
+    zIndexOffset: 3000
+  }
+)
+.addTo(map)
+.bindTooltip(
+  "Last public AIS · 13 Aug",
+  {
+    permanent: true,
+    direction: "right",
+    offset: [12, 0],
+    className: "ais-label"
   }
 );
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // FULL JOURNEY LINE
-// ===================================================
+// ---------------------------------------------------
 
-const fullRoute =
-  route.map(
-    point => [
-      point.lat,
-      point.lng
-    ]
-  );
-
+const fullRoute = route.map(
+  point => [point.lat, point.lng]
+);
 
 L.polyline(
   fullRoute,
   {
-    color:
-      "#469fe1",
-
-    weight:
-      3,
-
-    opacity:
-      0.48,
-
-    dashArray:
-      "8 8"
+    color: "#469fe1",
+    weight: 3,
+    opacity: 0.48,
+    dashArray: "8 8"
   }
-)
-.addTo(map);
+).addTo(map);
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // SHIP ICON
-// ===================================================
+// ---------------------------------------------------
 
-const shipIcon =
-  L.divIcon(
-    {
-      html:
-        '<div class="ship-icon">🚢</div>',
+const shipIcon = L.divIcon({
+  html: '<div class="ship-icon">🚢</div>',
+  className: "",
+  iconSize: [40, 40],
+  iconAnchor: [20, 20]
+});
 
-      className:
-        "",
-
-      iconSize:
-        [40, 40],
-
-      iconAnchor:
-        [20, 20]
-    }
-  );
+const ship = L.marker(
+  [route[0].lat, route[0].lng],
+  {
+    icon: shipIcon,
+    zIndexOffset: 2000
+  }
+).addTo(map);
 
 
-const ship =
-  L.marker(
-    [
-      route[0].lat,
-      route[0].lng
-    ],
-    {
-      icon:
-        shipIcon
-    }
-  )
-  .addTo(map);
+// ---------------------------------------------------
+// COMPLETED ROUTE
+// ---------------------------------------------------
+
+const travelledLine = L.polyline(
+  [],
+  {
+    color: "#00c2ff",
+    weight: 5,
+    opacity: 0.95
+  }
+).addTo(map);
 
 
-
-// ===================================================
-// COMPLETED / TRAVELLED ROUTE
-// ===================================================
-
-const travelledLine =
-  L.polyline(
-    [],
-    {
-      color:
-        "#00c2ff",
-
-      weight:
-        5,
-
-      opacity:
-        0.95
-    }
-  )
-  .addTo(map);
-
-
-
-// ===================================================
+// ---------------------------------------------------
 // DATE RANGE
-// ===================================================
+// ---------------------------------------------------
 
 const startTime =
-  route[0]
-  .time
-  .getTime();
-
+  route[0].time.getTime();
 
 const endTime =
-  route[
-    route.length - 1
-  ]
-  .time
-  .getTime();
-
+  route[route.length - 1].time.getTime();
 
 const HOURS =
   Math.round(
-    (
-      endTime -
-      startTime
-    )
-    /
-    (
-      1000 *
-      60 *
-      60
-    )
+    (endTime - startTime) /
+    3600000
   );
-
 
 const slider =
-  document.getElementById(
-    "slider"
-  );
+  document.getElementById("slider");
+
+slider.max = HOURS;
 
 
-slider.max =
-  HOURS;
+// ---------------------------------------------------
+// INTERPOLATION
+// ---------------------------------------------------
 
-
-
-// ===================================================
-// INTERPOLATE BETWEEN WAYPOINTS
-// ===================================================
-
-function interpolate(
-  a,
-  b,
-  fraction
-) {
+function interpolate(a, b, fraction) {
 
   return {
-
     lat:
       a.lat +
-      (
-        b.lat -
-        a.lat
-      )
-      *
-      fraction,
-
+      (b.lat - a.lat) * fraction,
 
     lng:
       a.lng +
-      (
-        b.lng -
-        a.lng
-      )
-      *
-      fraction
-
+      (b.lng - a.lng) * fraction
   };
 
 }
 
 
+function getPosition(time) {
 
-// ===================================================
-// FIND ESTIMATED POSITION FOR DATE
-// ===================================================
-
-function getPosition(
-  time
-) {
-
-  if (
-    time <=
-    route[0].time
-  ) {
-
+  if (time <= route[0].time) {
     return {
-
       ...route[0],
-
       leg: 0,
-
       fraction: 0
-
     };
-
   }
 
-
-  if (
-    time >=
-    route[
-      route.length - 1
-    ].time
-  ) {
-
+  if (time >= route[route.length - 1].time) {
     return {
-
-      ...route[
-        route.length - 1
-      ],
-
-      leg:
-        route.length - 2,
-
-      fraction:
-        1
-
+      ...route[route.length - 1],
+      leg: route.length - 2,
+      fraction: 1
     };
-
   }
 
+  for (let i = 0; i < route.length - 1; i++) {
 
-  for (
-    let i = 0;
-    i < route.length - 1;
-    i++
-  ) {
+    const a = route[i];
+    const b = route[i + 1];
 
-    const a =
-      route[i];
-
-    const b =
-      route[i + 1];
-
-
-    if (
-      time >= a.time &&
-      time <= b.time
-    ) {
+    if (time >= a.time && time <= b.time) {
 
       const fraction =
-        (
-          time -
-          a.time
-        )
-        /
-        (
-          b.time -
-          a.time
-        );
-
+        (time - a.time) /
+        (b.time - a.time);
 
       const position =
-        interpolate(
-          a,
-          b,
-          fraction
-        );
-
+        interpolate(a, b, fraction);
 
       return {
-
         ...position,
-
-        leg:
-          i,
-
-        fraction:
-          fraction
-
+        leg: i,
+        fraction: fraction
       };
-
     }
-
   }
-
 }
 
 
+// ---------------------------------------------------
+// UPDATE SHIP / TEXT
+// ---------------------------------------------------
 
-// ===================================================
-// UPDATE SHIP + TEXT
-// ===================================================
-
-function updateVoyage(
-  hours
-) {
+function updateVoyage(hours) {
 
   const selected =
     new Date(
       startTime +
-      hours *
-      3600000
+      hours * 3600000
     );
-
 
   const p =
-    getPosition(
-      selected
-    );
-
+    getPosition(selected);
 
   ship.setLatLng(
-    [
-      p.lat,
-      p.lng
-    ]
+    [p.lat, p.lng]
   );
 
 
+  // completed route
 
-  // -----------------------------------------------
-  // COMPLETED ROUTE
-  // -----------------------------------------------
+  const travelled = [];
 
-  const travelled =
-    [];
-
-
-  for (
-    let i = 0;
-    i <= p.leg;
-    i++
-  ) {
-
+  for (let i = 0; i <= p.leg; i++) {
     travelled.push(
       [
         route[i].lat,
         route[i].lng
       ]
     );
-
   }
 
-
   travelled.push(
-    [
-      p.lat,
-      p.lng
-    ]
+    [p.lat, p.lng]
   );
 
-
-  travelledLine
-  .setLatLngs(
+  travelledLine.setLatLngs(
     travelled
   );
 
 
-
-  // -----------------------------------------------
-  // DATE DISPLAY
-  // -----------------------------------------------
+  // date
 
   const dateFormat =
     new Intl.DateTimeFormat(
       "en-NZ",
       {
-        timeZone:
-          "Pacific/Auckland",
-
-        weekday:
-          "short",
-
-        day:
-          "numeric",
-
-        month:
-          "short",
-
-        hour:
-          "numeric",
-
-        minute:
-          "2-digit"
+        timeZone: "Pacific/Auckland",
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "numeric",
+        minute: "2-digit"
       }
     );
 
-
   document
-  .getElementById(
-    "dateDisplay"
-  )
-  .textContent =
-    dateFormat.format(
-      selected
-    );
+    .getElementById("dateDisplay")
+    .textContent =
+      dateFormat.format(selected);
 
 
-
-  // -----------------------------------------------
-  // STATUS TEXT
-  // -----------------------------------------------
+  // status
 
   let status;
 
-
   const finalPoint =
-    route[
-      route.length - 1
-    ];
+    route[route.length - 1];
 
-
-  if (
-    selected >=
-    finalPoint.time
-  ) {
+  if (selected >= finalPoint.time) {
 
     status =
       "📍 Auckland — scheduled arrival";
 
-  }
-
-  else {
+  } else {
 
     const from =
-      route[
-        p.leg
-      ].name;
-
+      route[p.leg].name;
 
     const to =
-      route[
-        p.leg + 1
-      ].name;
-
+      route[p.leg + 1].name;
 
     if (
-      route[
-        p.leg
-      ].isAIS
+      route[p.leg].isAIS ||
+      selected > aisPoint.time
     ) {
 
       status =
-        "Estimated position from last public AIS · "
-        +
-        from
-        +
-        " → "
-        +
+        "Estimated from last public AIS · " +
+        from +
+        " → " +
         to;
 
-    }
-
-    else {
+    } else {
 
       status =
-        "Estimated position · "
-        +
-        from
-        +
-        " → "
-        +
+        "Estimated position · " +
+        from +
+        " → " +
         to;
-
     }
-
   }
 
 
-
-  // -----------------------------------------------
-  // COORDINATES
-  // -----------------------------------------------
+  // coordinates
 
   const latitude =
-    Math.abs(
-      p.lat
-    )
-    .toFixed(2)
-    +
-    "°"
-    +
+    Math.abs(p.lat).toFixed(2) +
+    "°" +
     (
       p.lat < 0
         ? "S"
         : "N"
     );
 
-
   const longitude =
-    Math.abs(
-      p.lng
-    )
-    .toFixed(2)
-    +
-    "°"
-    +
+    Math.abs(p.lng).toFixed(2) +
+    "°" +
     (
       p.lng < 0
         ? "W"
         : "E"
     );
 
-
   document
-  .getElementById(
-    "status"
-  )
-  .textContent =
-
-    status
-    +
-    " · "
-    +
-    latitude
-    +
-    ", "
-    +
-    longitude;
-
+    .getElementById("status")
+    .textContent =
+      status +
+      " · " +
+      latitude +
+      ", " +
+      longitude;
 }
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // SLIDER
-// ===================================================
+// ---------------------------------------------------
 
-slider
-.addEventListener(
+slider.addEventListener(
   "input",
   () => {
-
     updateVoyage(
-      Number(
-        slider.value
-      )
+      Number(slider.value)
     );
-
   }
 );
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // TODAY
-// ===================================================
+// ---------------------------------------------------
 
 function goToday() {
 
   const now =
     new Date();
 
-
   let hours =
     Math.round(
       (
-        now.getTime()
-        -
+        now.getTime() -
         startTime
-      )
-      /
+      ) /
       3600000
     );
-
 
   hours =
     Math.max(
@@ -1163,50 +758,38 @@ function goToday() {
       )
     );
 
-
   slider.value =
     hours;
-
 
   updateVoyage(
     hours
   );
-
 }
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // +7 DAYS
-// ===================================================
+// ---------------------------------------------------
 
 function goPlus7() {
 
   const now =
     new Date();
 
-
   const target =
     new Date(
-      now.getTime()
-      +
-      7 *
-      24 *
-      3600000
+      now.getTime() +
+      7 * 24 * 3600000
     );
-
 
   let hours =
     Math.round(
       (
-        target.getTime()
-        -
+        target.getTime() -
         startTime
-      )
-      /
+      ) /
       3600000
     );
-
 
   hours =
     Math.max(
@@ -1217,43 +800,31 @@ function goPlus7() {
       )
     );
 
-
   slider.value =
     hours;
-
 
   updateVoyage(
     hours
   );
-
 }
 
 
+// ---------------------------------------------------
+// PLAY
+// ---------------------------------------------------
 
-// ===================================================
-// PLAY ANIMATION
-// ===================================================
-
-let timer =
-  null;
-
+let timer = null;
 
 function playVoyage() {
 
   const button =
-    document
-    .getElementById(
+    document.getElementById(
       "playButton"
     );
 
+  if (timer) {
 
-  if (
-    timer
-  ) {
-
-    clearInterval(
-      timer
-    );
+    clearInterval(timer);
 
     timer =
       null;
@@ -1262,111 +833,80 @@ function playVoyage() {
       "▶ Play voyage";
 
     return;
-
   }
-
 
   slider.value =
     0;
-
 
   updateVoyage(
     0
   );
 
-
   button.textContent =
     "⏸ Pause";
-
 
   timer =
     setInterval(
       () => {
 
         let hours =
-          Number(
-            slider.value
-          )
-          +
+          Number(slider.value) +
           3;
 
+        if (hours > HOURS) {
 
-        if (
-          hours >
-          HOURS
-        ) {
-
-          clearInterval(
-            timer
-          );
+          clearInterval(timer);
 
           timer =
             null;
 
-
           button.textContent =
             "▶ Play voyage";
 
-
           return;
-
         }
-
 
         slider.value =
           hours;
-
 
         updateVoyage(
           hours
         );
 
       },
-
       35
     );
-
 }
 
 
-
-// ===================================================
-// MOBILE MAP RESIZE FIX
-// ===================================================
+// ---------------------------------------------------
+// MOBILE RESIZE FIX
+// ---------------------------------------------------
 
 function resizeMap() {
 
   setTimeout(
     () => {
-
       map.invalidateSize();
-
     },
-
     100
   );
-
 }
 
-
-window
-.addEventListener(
+window.addEventListener(
   "resize",
   resizeMap
 );
 
-
-window
-.addEventListener(
+window.addEventListener(
   "orientationchange",
   resizeMap
 );
 
 
-
-// ===================================================
+// ---------------------------------------------------
 // INITIAL VIEW
-// ===================================================
+// ---------------------------------------------------
 
 map.fitBounds(
   L.latLngBounds(
@@ -1378,11 +918,9 @@ map.fitBounds(
   }
 );
 
-
 goToday();
 
 </script>
-
 
 </body>
 </html>
