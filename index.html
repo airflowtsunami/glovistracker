@@ -8,7 +8,7 @@
   content="width=device-width, initial-scale=1, viewport-fit=cover"
 >
 
-<title>GLOVIS CENTURY – Tesla M3 Voyage Tracker</title>
+<title>GLOVIS CENTURY – Tesla Voyage Tracker</title>
 
 <link
   rel="stylesheet"
@@ -47,33 +47,79 @@
   .header {
     position: absolute;
     z-index: 1000;
-    top: 18px;
-    left: 18px;
-    background: rgba(5, 16, 27, 0.91);
-    padding: 14px 18px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.3);
-    max-width: calc(100% - 36px);
+    top: 12px;
+    left: 12px;
+
+    background: rgba(5, 16, 27, 0.92);
+    padding: 11px 14px;
+
+    border-radius: 11px;
+
+    box-shadow:
+      0 5px 20px rgba(0,0,0,.35);
+
+    max-width:
+      calc(100% - 24px);
   }
 
   .header h2 {
-    margin: 0 0 5px 0;
-    font-size: 20px;
+    margin: 0 0 4px 0;
+    font-size: 19px;
   }
 
   .header .sub {
     color: #9db0c3;
+    font-size: 12px;
+  }
+
+  #aisHeadline {
+    position: absolute;
+
+    z-index: 1001;
+
+    top: 82px;
+    left: 12px;
+    right: 12px;
+
+    background:
+      rgba(0, 194, 255, 0.93);
+
+    color: #00121f;
+
+    padding: 9px 12px;
+
+    border-radius: 9px;
+
     font-size: 13px;
+
+    line-height: 1.35;
+
+    text-decoration: none;
+
+    box-shadow:
+      0 4px 15px rgba(0,0,0,.3);
+  }
+
+  #aisHeadline strong {
+    font-weight: 800;
+  }
+
+  #aisHeadline .estimate {
+    font-weight: 700;
   }
 
   #controls {
     flex: 0 0 auto;
+
     width: 100%;
+
     background: #0c1d2d;
-    border-top: 1px solid #21384b;
+
+    border-top:
+      1px solid #21384b;
 
     padding:
-      12px
+      11px
       max(16px, env(safe-area-inset-right))
       max(12px, env(safe-area-inset-bottom))
       max(16px, env(safe-area-inset-left));
@@ -87,42 +133,66 @@
 
   #status {
     margin-top: 3px;
+
     font-size: 12px;
+
     color: #8fa8bd;
+
     line-height: 1.35;
   }
 
   #slider {
     display: block;
+
     width: 100%;
+
     max-width: 100%;
-    margin: 14px 0 8px;
-    accent-color: #2e9fff;
+
+    margin:
+      13px 0 7px;
+
+    accent-color:
+      #2e9fff;
   }
 
   .sliderLabels {
     display: flex;
-    justify-content: space-between;
+
+    justify-content:
+      space-between;
+
     gap: 8px;
+
     color: #8299ad;
+
     font-size: 10px;
   }
 
   .buttonRow {
     display: flex;
+
     gap: 7px;
+
     flex-wrap: wrap;
+
     margin-top: 9px;
   }
 
   button {
     border: 0;
+
     border-radius: 7px;
+
     padding: 8px 11px;
+
     cursor: pointer;
+
     background: #1d75b9;
+
     color: white;
+
     font-weight: 600;
+
     font-size: 13px;
   }
 
@@ -131,53 +201,104 @@
   }
 
   button:active {
-    transform: translateY(1px);
+    transform:
+      translateY(1px);
   }
 
   .ship-icon {
     font-size: 33px;
-    filter: drop-shadow(0 3px 4px rgba(0,0,0,.6));
+
+    filter:
+      drop-shadow(
+        0 3px 4px
+        rgba(0,0,0,.6)
+      );
   }
 
   .port-label {
     background: #10283b;
+
     color: white;
-    border: 1px solid #4f7188;
+
+    border:
+      1px solid #4f7188;
+
     border-radius: 5px;
+
     padding: 2px 6px;
+  }
+
+  .ais-label {
+    background:
+      #ffd54a;
+
+    color:
+      #111;
+
+    border:
+      1px solid #8d7415;
+
+    border-radius:
+      5px;
+
+    padding:
+      2px 6px;
+
+    font-weight:
+      700;
   }
 
   .leaflet-tooltip {
     box-shadow: none;
   }
 
+
   @media (max-width: 600px) {
+
     .header {
-      top: 8px;
-      left: 8px;
-      right: 8px;
+      top: 7px;
+      left: 7px;
+      right: 7px;
+
       max-width: none;
-      padding: 9px 11px;
+
+      padding: 8px 10px;
     }
 
     .header h2 {
-      font-size: 16px;
-    }
-
-    .header .sub {
-      font-size: 11px;
-    }
-
-    #controls {
-      padding-top: 9px;
-    }
-
-    #dateDisplay {
       font-size: 15px;
     }
 
+    .header .sub {
+      font-size: 10px;
+    }
+
+    #aisHeadline {
+      top: 58px;
+
+      left: 7px;
+      right: 7px;
+
+      padding:
+        6px 8px;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.3;
+    }
+
+    #controls {
+      padding-top: 8px;
+    }
+
+    #dateDisplay {
+      font-size: 14px;
+    }
+
     #status {
-      font-size: 11px;
+      font-size: 10px;
     }
 
     .sliderLabels {
@@ -185,29 +306,69 @@
     }
 
     button {
-      font-size: 12px;
-      padding: 7px 9px;
-      flex: 1 1 auto;
+      font-size: 11px;
+
+      padding:
+        7px 8px;
+
+      flex:
+        1 1 auto;
     }
+
   }
+
 </style>
 </head>
 
+
 <body>
 
+
 <div class="header">
-  <h2>🚢 GLOVIS CENTURY</h2>
+
+  <h2>
+    🚢 GLOVIS CENTURY
+  </h2>
+
   <div class="sub">
-    IMO 9590589 · Estimated Tesla voyage tracker
+    IMO 9590589 · Tesla voyage tracker
   </div>
+
 </div>
 
+
+<a
+  id="aisHeadline"
+  href="https://www.vesseltracker.com/en/Ships/Glovis-Century-9590589.html"
+  target="_blank"
+  rel="noopener"
+>
+
+  🚢
+  <strong>
+    Last public AIS:
+  </strong>
+
+  Philippine Sea · 13 Aug 2026
+  · En route to Suva
+
+  ·
+  <span class="estimate">
+    Current position below is estimated
+  </span>
+
+</a>
+
+
 <div id="map"></div>
+
 
 <div id="controls">
 
   <div id="dateDisplay"></div>
+
   <div id="status"></div>
+
 
   <input
     id="slider"
@@ -218,213 +379,445 @@
     step="1"
   >
 
+
   <div class="sliderLabels">
-    <span>3 Aug · Kobe</span>
-    <span>22 Aug · Suva</span>
-    <span>31 Aug · Auckland</span>
+
+    <span>
+      3 Aug · Kobe
+    </span>
+
+    <span>
+      22 Aug · Suva
+    </span>
+
+    <span>
+      31 Aug · Auckland
+    </span>
+
   </div>
 
+
   <div class="buttonRow">
-    <button onclick="goToday()">Today</button>
-    <button onclick="goPlus7()">+7 days</button>
-    <button onclick="playVoyage()">▶ Play voyage</button>
+
+    <button
+      onclick="goToday()"
+    >
+      Today
+    </button>
+
+    <button
+      onclick="goPlus7()"
+    >
+      +7 days
+    </button>
+
+    <button
+      id="playButton"
+      onclick="playVoyage()"
+    >
+      ▶ Play voyage
+    </button>
+
   </div>
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
 
 <script>
 
-// ---------------------------------------------------
+// ===================================================
 // MAP
-// ---------------------------------------------------
+// ===================================================
 
-const map = L.map("map", {
-  zoomControl: true
-}).setView([-11, 158], 4);
+const map =
+  L.map(
+    "map",
+    {
+      zoomControl: true
+    }
+  )
+  .setView(
+    [-11, 158],
+    4
+  );
+
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 10,
-    attribution: "&copy; OpenStreetMap contributors"
+
+    attribution:
+      "&copy; OpenStreetMap contributors"
   }
-).addTo(map);
+)
+.addTo(map);
 
 
-// ---------------------------------------------------
+
+// ===================================================
 // VOYAGE WAYPOINTS
 //
-// Positions between these known/planned points
-// are estimated using interpolation.
-// ---------------------------------------------------
+// IMPORTANT:
+// Locations between these points are ESTIMATES.
+// They are not live satellite AIS positions.
+// ===================================================
 
 const route = [
 
   {
     name: "Kobe",
+
     lat: 34.69,
     lng: 135.19,
-    time: new Date("2026-08-03T12:00:00+09:00")
+
+    time:
+      new Date(
+        "2026-08-03T12:00:00+09:00"
+      )
   },
+
+
+  /*
+    Approximate last publicly reported
+    AIS region.
+
+    This point is deliberately labelled
+    as approximate because the public
+    source describes the Philippine Sea,
+    rather than providing us here with a
+    fresh live satellite fix.
+  */
+
+  {
+    name:
+      "Last public AIS",
+
+    lat: 18.0,
+    lng: 132.0,
+
+    time:
+      new Date(
+        "2026-08-13T12:00:00+08:00"
+      ),
+
+    isAIS: true
+  },
+
 
   {
     name: "Suva",
+
     lat: -18.1416,
     lng: 178.4419,
-    time: new Date("2026-08-22T17:30:00+12:00")
+
+    time:
+      new Date(
+        "2026-08-22T17:30:00+12:00"
+      )
   },
+
 
   {
     name: "Auckland",
+
     lat: -36.8406,
     lng: 174.7850,
-    time: new Date("2026-08-31T00:00:00+12:00")
+
+    time:
+      new Date(
+        "2026-08-31T00:00:00+12:00"
+      )
   }
 
 ];
 
 
-// ---------------------------------------------------
-// PORT MARKERS
-// ---------------------------------------------------
 
-route.forEach(port => {
+// ===================================================
+// PORT / WAYPOINT MARKERS
+// ===================================================
 
-  L.circleMarker(
-    [port.lat, port.lng],
-    {
-      radius: 6,
-      color: "#ffffff",
-      weight: 2,
-      fillColor: "#1a89d9",
-      fillOpacity: 1
-    }
-  )
-  .addTo(map)
-  .bindTooltip(
-    port.name,
-    {
-      permanent: true,
-      direction: "top",
-      className: "port-label"
-    }
+route.forEach(
+  point => {
+
+    const isAIS =
+      point.isAIS === true;
+
+
+    L.circleMarker(
+      [
+        point.lat,
+        point.lng
+      ],
+      {
+        radius:
+          isAIS ? 7 : 6,
+
+        color:
+          "#ffffff",
+
+        weight:
+          2,
+
+        fillColor:
+          isAIS
+            ? "#ffd54a"
+            : "#1a89d9",
+
+        fillOpacity:
+          1
+      }
+    )
+    .addTo(map)
+    .bindTooltip(
+      point.name,
+      {
+        permanent:
+          true,
+
+        direction:
+          "top",
+
+        className:
+          isAIS
+            ? "ais-label"
+            : "port-label"
+      }
+    );
+
+  }
+);
+
+
+
+// ===================================================
+// FULL JOURNEY LINE
+// ===================================================
+
+const fullRoute =
+  route.map(
+    point => [
+      point.lat,
+      point.lng
+    ]
   );
 
-});
-
-
-// ---------------------------------------------------
-// FULL ROUTE
-// ---------------------------------------------------
-
-const fullRoute = route.map(
-  port => [port.lat, port.lng]
-);
 
 L.polyline(
   fullRoute,
   {
-    color: "#469fe1",
-    weight: 3,
-    opacity: 0.48,
-    dashArray: "8 8"
+    color:
+      "#469fe1",
+
+    weight:
+      3,
+
+    opacity:
+      0.48,
+
+    dashArray:
+      "8 8"
   }
-).addTo(map);
+)
+.addTo(map);
 
 
-// ---------------------------------------------------
-// SHIP
-// ---------------------------------------------------
 
-const shipIcon = L.divIcon({
-  html: '<div class="ship-icon">🚢</div>',
-  className: "",
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
-});
+// ===================================================
+// SHIP ICON
+// ===================================================
 
-const ship = L.marker(
-  [route[0].lat, route[0].lng],
-  {
-    icon: shipIcon
-  }
-).addTo(map);
+const shipIcon =
+  L.divIcon(
+    {
+      html:
+        '<div class="ship-icon">🚢</div>',
 
+      className:
+        "",
 
-// ---------------------------------------------------
-// COMPLETED ROUTE
-// ---------------------------------------------------
+      iconSize:
+        [40, 40],
 
-const travelledLine = L.polyline(
-  [],
-  {
-    color: "#00c2ff",
-    weight: 5,
-    opacity: 0.95
-  }
-).addTo(map);
+      iconAnchor:
+        [20, 20]
+    }
+  );
 
 
-// ---------------------------------------------------
+const ship =
+  L.marker(
+    [
+      route[0].lat,
+      route[0].lng
+    ],
+    {
+      icon:
+        shipIcon
+    }
+  )
+  .addTo(map);
+
+
+
+// ===================================================
+// COMPLETED / TRAVELLED ROUTE
+// ===================================================
+
+const travelledLine =
+  L.polyline(
+    [],
+    {
+      color:
+        "#00c2ff",
+
+      weight:
+        5,
+
+      opacity:
+        0.95
+    }
+  )
+  .addTo(map);
+
+
+
+// ===================================================
 // DATE RANGE
-// ---------------------------------------------------
+// ===================================================
 
 const startTime =
-  route[0].time.getTime();
+  route[0]
+  .time
+  .getTime();
+
 
 const endTime =
-  route[route.length - 1].time.getTime();
+  route[
+    route.length - 1
+  ]
+  .time
+  .getTime();
+
 
 const HOURS =
   Math.round(
-    (endTime - startTime) /
-    (1000 * 60 * 60)
+    (
+      endTime -
+      startTime
+    )
+    /
+    (
+      1000 *
+      60 *
+      60
+    )
   );
 
+
 const slider =
-  document.getElementById("slider");
+  document.getElementById(
+    "slider"
+  );
 
-slider.max = HOURS;
+
+slider.max =
+  HOURS;
 
 
-// ---------------------------------------------------
-// INTERPOLATION
-// ---------------------------------------------------
 
-function interpolate(a, b, fraction) {
+// ===================================================
+// INTERPOLATE BETWEEN WAYPOINTS
+// ===================================================
+
+function interpolate(
+  a,
+  b,
+  fraction
+) {
 
   return {
+
     lat:
       a.lat +
-      (b.lat - a.lat) * fraction,
+      (
+        b.lat -
+        a.lat
+      )
+      *
+      fraction,
+
 
     lng:
       a.lng +
-      (b.lng - a.lng) * fraction
+      (
+        b.lng -
+        a.lng
+      )
+      *
+      fraction
+
   };
 
 }
 
 
-function getPosition(time) {
 
-  if (time <= route[0].time) {
+// ===================================================
+// FIND ESTIMATED POSITION FOR DATE
+// ===================================================
+
+function getPosition(
+  time
+) {
+
+  if (
+    time <=
+    route[0].time
+  ) {
+
     return {
+
       ...route[0],
+
       leg: 0,
+
       fraction: 0
+
     };
+
   }
 
-  if (time >= route[route.length - 1].time) {
+
+  if (
+    time >=
+    route[
+      route.length - 1
+    ].time
+  ) {
+
     return {
-      ...route[route.length - 1],
-      leg: route.length - 2,
-      fraction: 1
+
+      ...route[
+        route.length - 1
+      ],
+
+      leg:
+        route.length - 2,
+
+      fraction:
+        1
+
     };
+
   }
+
 
   for (
     let i = 0;
@@ -432,8 +825,12 @@ function getPosition(time) {
     i++
   ) {
 
-    const a = route[i];
-    const b = route[i + 1];
+    const a =
+      route[i];
+
+    const b =
+      route[i + 1];
+
 
     if (
       time >= a.time &&
@@ -441,50 +838,83 @@ function getPosition(time) {
     ) {
 
       const fraction =
-        (time - a.time) /
-        (b.time - a.time);
+        (
+          time -
+          a.time
+        )
+        /
+        (
+          b.time -
+          a.time
+        );
 
-      const pos =
+
+      const position =
         interpolate(
           a,
           b,
           fraction
         );
 
+
       return {
-        ...pos,
-        leg: i,
-        fraction: fraction
+
+        ...position,
+
+        leg:
+          i,
+
+        fraction:
+          fraction
+
       };
 
     }
+
   }
+
 }
 
 
-// ---------------------------------------------------
-// UPDATE DISPLAY
-// ---------------------------------------------------
 
-function updateVoyage(hours) {
+// ===================================================
+// UPDATE SHIP + TEXT
+// ===================================================
+
+function updateVoyage(
+  hours
+) {
 
   const selected =
     new Date(
       startTime +
-      hours * 3600000
+      hours *
+      3600000
     );
 
+
   const p =
-    getPosition(selected);
+    getPosition(
+      selected
+    );
+
 
   ship.setLatLng(
-    [p.lat, p.lng]
+    [
+      p.lat,
+      p.lng
+    ]
   );
 
 
-  // Build completed route
 
-  const travelled = [];
+  // -----------------------------------------------
+  // COMPLETED ROUTE
+  // -----------------------------------------------
+
+  const travelled =
+    [];
+
 
   for (
     let i = 0;
@@ -501,79 +931,160 @@ function updateVoyage(hours) {
 
   }
 
+
   travelled.push(
-    [p.lat, p.lng]
+    [
+      p.lat,
+      p.lng
+    ]
   );
 
-  travelledLine.setLatLngs(
+
+  travelledLine
+  .setLatLngs(
     travelled
   );
 
 
-  // Date display
+
+  // -----------------------------------------------
+  // DATE DISPLAY
+  // -----------------------------------------------
 
   const dateFormat =
     new Intl.DateTimeFormat(
       "en-NZ",
       {
-        timeZone: "Pacific/Auckland",
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit"
+        timeZone:
+          "Pacific/Auckland",
+
+        weekday:
+          "short",
+
+        day:
+          "numeric",
+
+        month:
+          "short",
+
+        hour:
+          "numeric",
+
+        minute:
+          "2-digit"
       }
     );
 
-  document.getElementById(
+
+  document
+  .getElementById(
     "dateDisplay"
-  ).textContent =
-    dateFormat.format(selected);
+  )
+  .textContent =
+    dateFormat.format(
+      selected
+    );
 
 
-  // Status
+
+  // -----------------------------------------------
+  // STATUS TEXT
+  // -----------------------------------------------
 
   let status;
 
+
+  const finalPoint =
+    route[
+      route.length - 1
+    ];
+
+
   if (
     selected >=
-    route[route.length - 1].time
+    finalPoint.time
   ) {
 
     status =
       "📍 Auckland — scheduled arrival";
 
-  } else {
+  }
+
+  else {
 
     const from =
-      route[p.leg].name;
+      route[
+        p.leg
+      ].name;
+
 
     const to =
-      route[p.leg + 1].name;
+      route[
+        p.leg + 1
+      ].name;
 
-    status =
-      "Estimated position · " +
-      from +
-      " → " +
-      to;
+
+    if (
+      route[
+        p.leg
+      ].isAIS
+    ) {
+
+      status =
+        "Estimated position from last public AIS · "
+        +
+        from
+        +
+        " → "
+        +
+        to;
+
+    }
+
+    else {
+
+      status =
+        "Estimated position · "
+        +
+        from
+        +
+        " → "
+        +
+        to;
+
+    }
 
   }
 
 
-  // Approximate coordinates
+
+  // -----------------------------------------------
+  // COORDINATES
+  // -----------------------------------------------
 
   const latitude =
-    Math.abs(p.lat).toFixed(2) +
-    "°" +
+    Math.abs(
+      p.lat
+    )
+    .toFixed(2)
+    +
+    "°"
+    +
     (
       p.lat < 0
         ? "S"
         : "N"
     );
 
+
   const longitude =
-    Math.abs(p.lng).toFixed(2) +
-    "°" +
+    Math.abs(
+      p.lng
+    )
+    .toFixed(2)
+    +
+    "°"
+    +
     (
       p.lng < 0
         ? "W"
@@ -581,51 +1092,67 @@ function updateVoyage(hours) {
     );
 
 
-  document.getElementById(
+  document
+  .getElementById(
     "status"
-  ).textContent =
-    status +
-    " · " +
-    latitude +
-    ", " +
+  )
+  .textContent =
+
+    status
+    +
+    " · "
+    +
+    latitude
+    +
+    ", "
+    +
     longitude;
 
 }
 
 
-// ---------------------------------------------------
-// SLIDER
-// ---------------------------------------------------
 
-slider.addEventListener(
+// ===================================================
+// SLIDER
+// ===================================================
+
+slider
+.addEventListener(
   "input",
   () => {
 
     updateVoyage(
-      Number(slider.value)
+      Number(
+        slider.value
+      )
     );
 
   }
 );
 
 
-// ---------------------------------------------------
+
+// ===================================================
 // TODAY
-// ---------------------------------------------------
+// ===================================================
 
 function goToday() {
 
   const now =
     new Date();
 
+
   let hours =
     Math.round(
       (
-        now.getTime() -
+        now.getTime()
+        -
         startTime
-      ) /
+      )
+      /
       3600000
     );
+
 
   hours =
     Math.max(
@@ -636,8 +1163,10 @@ function goToday() {
       )
     );
 
+
   slider.value =
     hours;
+
 
   updateVoyage(
     hours
@@ -646,31 +1175,38 @@ function goToday() {
 }
 
 
-// ---------------------------------------------------
-// PLUS 7 DAYS
-// ---------------------------------------------------
+
+// ===================================================
+// +7 DAYS
+// ===================================================
 
 function goPlus7() {
 
   const now =
     new Date();
 
+
   const target =
     new Date(
-      now.getTime() +
+      now.getTime()
+      +
       7 *
       24 *
       3600000
     );
 
+
   let hours =
     Math.round(
       (
-        target.getTime() -
+        target.getTime()
+        -
         startTime
-      ) /
+      )
+      /
       3600000
     );
+
 
   hours =
     Math.max(
@@ -681,8 +1217,10 @@ function goPlus7() {
       )
     );
 
+
   slider.value =
     hours;
+
 
   updateVoyage(
     hours
@@ -691,102 +1229,160 @@ function goPlus7() {
 }
 
 
-// ---------------------------------------------------
-// PLAY VOYAGE
-// ---------------------------------------------------
 
-let timer = null;
+// ===================================================
+// PLAY ANIMATION
+// ===================================================
+
+let timer =
+  null;
+
 
 function playVoyage() {
 
-  if (timer) {
+  const button =
+    document
+    .getElementById(
+      "playButton"
+    );
 
-    clearInterval(timer);
-    timer = null;
+
+  if (
+    timer
+  ) {
+
+    clearInterval(
+      timer
+    );
+
+    timer =
+      null;
+
+    button.textContent =
+      "▶ Play voyage";
+
     return;
 
   }
 
-  slider.value = 0;
 
-  updateVoyage(0);
+  slider.value =
+    0;
+
+
+  updateVoyage(
+    0
+  );
+
+
+  button.textContent =
+    "⏸ Pause";
+
 
   timer =
     setInterval(
       () => {
 
         let hours =
-          Number(slider.value) + 3;
+          Number(
+            slider.value
+          )
+          +
+          3;
+
 
         if (
-          hours > HOURS
+          hours >
+          HOURS
         ) {
 
-          clearInterval(timer);
-          timer = null;
+          clearInterval(
+            timer
+          );
+
+          timer =
+            null;
+
+
+          button.textContent =
+            "▶ Play voyage";
+
+
           return;
 
         }
 
+
         slider.value =
           hours;
+
 
         updateVoyage(
           hours
         );
 
       },
+
       35
     );
 
 }
 
 
-// ---------------------------------------------------
-// INITIAL VIEW
-// ---------------------------------------------------
 
-goToday();
+// ===================================================
+// MOBILE MAP RESIZE FIX
+// ===================================================
+
+function resizeMap() {
+
+  setTimeout(
+    () => {
+
+      map.invalidateSize();
+
+    },
+
+    100
+  );
+
+}
+
+
+window
+.addEventListener(
+  "resize",
+  resizeMap
+);
+
+
+window
+.addEventListener(
+  "orientationchange",
+  resizeMap
+);
+
+
+
+// ===================================================
+// INITIAL VIEW
+// ===================================================
 
 map.fitBounds(
   L.latLngBounds(
     fullRoute
   ),
   {
-    padding: [50, 50]
+    padding:
+      [45, 45]
   }
 );
 
 
-// ---------------------------------------------------
-// MOBILE RESIZE FIX
-//
-// Ensures Leaflet recalculates its dimensions
-// when mobile browser chrome changes size.
-// ---------------------------------------------------
-
-function resizeMap() {
-
-  setTimeout(
-    () => {
-      map.invalidateSize();
-    },
-    100
-  );
-
-}
-
-window.addEventListener(
-  "resize",
-  resizeMap
-);
-
-window.addEventListener(
-  "orientationchange",
-  resizeMap
-);
+goToday();
 
 </script>
+
 
 </body>
 </html>
