@@ -44,7 +44,7 @@ body {
   display: block;
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.7));
 } */
-.tesla-icon {
+/* .tesla-icon {
   width: 18px !important;
   height: 10px !important;
 }
@@ -54,7 +54,7 @@ body {
   height: 10px !important;
   object-fit: contain;
   display: block;
-}
+} */
 
   
 #map {
@@ -353,17 +353,24 @@ const KOBE = {
 };
 
 
-const shipIcon = L.divIcon({
-  html: `
-    <div class="tesla-icon">
-      <img src="model3.png" alt="Tesla Model 3">
-    </div>
-  `,
-  className: "",
-  iconSize: [18, 10],
-  iconAnchor: [9, 5]
-});
-  
+// const shipIcon = L.divIcon({
+//   html: `
+//     <div class="tesla-icon">
+//       <img src="model3.png" alt="Tesla Model 3">
+//     </div>
+//   `,
+//   className: "",
+//   iconSize: [18, 10],
+//   iconAnchor: [9, 5]
+// });
+
+  const shipIcon =
+  L.divIcon({
+    html: '<div class="ship-icon">🚢</div>',
+    className: "",
+    iconSize: [44, 44],
+    iconAnchor: [22, 22]
+  });
   
 
 
