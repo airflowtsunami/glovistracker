@@ -8,7 +8,7 @@
   content="width=device-width, initial-scale=1, viewport-fit=cover"
 >
 
-<title>GLOVIS CENTURY – Tesla Tracker</title>
+<title>GLOVIS CENTURY – Tesla Voyage Tracker</title>
 
 <link
   rel="stylesheet"
@@ -309,10 +309,6 @@ button:hover {
 
 <script>
 
-/* ==================================================
-   CONSTANTS
-================================================== */
-
 const SOURCE_URL =
   "https://aisvesseltracker.com/vessel/glovis-century-mmsi-441200000-imo-9590589";
 
@@ -333,12 +329,7 @@ const AUCKLAND = {
 };
 
 
-/*
-  Built-in fallback.
-
-  This means the map will still work even
-  before GitHub Actions creates ais.json.
-*/
+/* Built-in fallback */
 
 let latestAIS = {
   lat: 33.862400,
@@ -349,13 +340,12 @@ let latestAIS = {
   course: 161.5,
   heading: 158,
   waterBody: "Philippine Sea",
-  source: "Voyage Radar"
+  source: "Voyage Radar",
+  checkedAt: ""
 };
 
 
-/* ==================================================
-   MAP
-================================================== */
+/* MAP */
 
 const map =
   L.map("map", {
@@ -372,9 +362,7 @@ L.tileLayer(
 ).addTo(map);
 
 
-/* ==================================================
-   PORTS
-================================================== */
+/* PORTS */
 
 function addPortMarker(point) {
 
@@ -404,9 +392,7 @@ addPortMarker(SUVA);
 addPortMarker(AUCKLAND);
 
 
-/* ==================================================
-   REAL AIS MARKER
-================================================== */
+/* REAL AIS MARKER */
 
 const aisIcon =
   L.divIcon({
@@ -437,9 +423,7 @@ const aisMarker =
   );
 
 
-/* ==================================================
-   ESTIMATED BOAT
-================================================== */
+/* ESTIMATED BOAT */
 
 const shipIcon =
   L.divIcon({
@@ -470,9 +454,7 @@ const ship =
   );
 
 
-/* ==================================================
-   ROUTE LINES
-================================================== */
+/* ROUTE LINES */
 
 const travelledLine =
   L.polyline(
@@ -499,9 +481,7 @@ const futureRoute =
   .addTo(map);
 
 
-/* ==================================================
-   INTERPOLATION
-================================================== */
+/* INTERPOLATION */
 
 function interpolate(a, b, fraction) {
 
@@ -523,22 +503,13 @@ function interpolate(a, b, fraction) {
 }
 
 
-/* ==================================================
-   ESTIMATED POSITION
-
-   If a future real AIS point is received AFTER Suva,
-   estimate directly from that newer fix to Auckland.
-================================================== */
+/* ESTIMATED POSITION */
 
 function getEstimatedPosition(selectedTime) {
 
   const aisTime =
     latestAIS.time;
 
-
-  /*
-    New AIS fix after Auckland arrival.
-  */
 
   if (
     aisTime >= AUCKLAND.time
@@ -550,13 +521,6 @@ function getEstimatedPosition(selectedTime) {
     };
   }
 
-
-  /*
-    New AIS fix after Suva.
-
-    In that case we no longer estimate
-    backwards via Suva.
-  */
 
   if (
     aisTime >= SUVA.time
@@ -604,11 +568,6 @@ function getEstimatedPosition(selectedTime) {
     };
   }
 
-
-  /*
-    Normal current situation:
-    AIS → Suva → Auckland
-  */
 
   if (
     selectedTime <= aisTime
@@ -681,9 +640,7 @@ function getEstimatedPosition(selectedTime) {
 }
 
 
-/* ==================================================
-   SLIDER
-================================================== */
+/* SLIDER */
 
 const slider =
   document.getElementById("slider");
@@ -709,9 +666,7 @@ function updateSliderRange() {
 }
 
 
-/* ==================================================
-   DATE FORMAT
-================================================== */
+/* DATE FORMATTERS */
 
 const dateFormat =
   new Intl.DateTimeFormat(
@@ -727,9 +682,20 @@ const dateFormat =
   );
 
 
-/* ==================================================
-   UPDATE DISPLAY
-================================================== */
+const checkedFormat =
+  new Intl.DateTimeFormat(
+    "en-NZ",
+    {
+      timeZone: "Pacific/Auckland",
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit"
+    }
+  );
+
+
+/* UPDATE DISPLAY */
 
 function updateVoyage(hours) {
 
@@ -817,9 +783,7 @@ function updateVoyage(hours) {
 }
 
 
-/* ==================================================
-   ROUTE LINE DISPLAY
-================================================== */
+/* ROUTE LINE DISPLAY */
 
 function updateRouteLines(p) {
 
@@ -924,9 +888,7 @@ function updateRouteLines(p) {
 }
 
 
-/* ==================================================
-   TODAY
-================================================== */
+/* TODAY */
 
 function goToday() {
 
@@ -957,9 +919,7 @@ function goToday() {
 }
 
 
-/* ==================================================
-   +7 DAYS
-================================================== */
+/* +7 DAYS */
 
 function goPlus7() {
 
@@ -995,9 +955,7 @@ function goPlus7() {
 }
 
 
-/* ==================================================
-   READ LOCAL ais.json
-================================================== */
+/* LOAD ais.json */
 
 async function refreshAIS() {
 
@@ -1130,6 +1088,26 @@ async function refreshAIS() {
     }
 
 
+    if (
+      latestAIS.checkedAt
+    ) {
+
+      const checkedDate =
+        new Date(
+          latestAIS.checkedAt
+        );
+
+      if (
+        !isNaN(
+          checkedDate.getTime()
+        )
+      ) {
+        text +=
+          ` · checked ${checkedFormat.format(checkedDate)}`;
+      }
+    }
+
+
     text +=
       ` · <a
        href="${SOURCE_URL}"
@@ -1158,12 +1136,39 @@ async function refreshAIS() {
     );
 
 
-    headline.innerHTML =
+    let fallbackText =
       `🟡 <strong>Using built-in last AIS:</strong>
        ${latestAIS.reported}
        · ${latestAIS.lat.toFixed(5)}°,
-       ${latestAIS.lng.toFixed(5)}°
-       · run the GitHub Action to create/update ais.json`;
+       ${latestAIS.lng.toFixed(5)}°`;
+
+
+    if (
+      latestAIS.checkedAt
+    ) {
+
+      const checkedDate =
+        new Date(
+          latestAIS.checkedAt
+        );
+
+      if (
+        !isNaN(
+          checkedDate.getTime()
+        )
+      ) {
+        fallbackText +=
+          ` · checked ${checkedFormat.format(checkedDate)}`;
+      }
+    }
+
+
+    fallbackText +=
+      ` · run the GitHub Action to create/update ais.json`;
+
+
+    headline.innerHTML =
+      fallbackText;
 
 
     updateSliderRange();
@@ -1175,9 +1180,7 @@ async function refreshAIS() {
 }
 
 
-/* ==================================================
-   FIT MAP
-================================================== */
+/* FIT MAP */
 
 function fitMap() {
 
@@ -1207,9 +1210,7 @@ function fitMap() {
 }
 
 
-/* ==================================================
-   PLAY
-================================================== */
+/* PLAY */
 
 let timer = null;
 
@@ -1277,9 +1278,7 @@ function playVoyage() {
 }
 
 
-/* ==================================================
-   EVENTS
-================================================== */
+/* EVENTS */
 
 document
   .getElementById("todayButton")
@@ -1323,9 +1322,7 @@ slider.addEventListener(
 );
 
 
-/* ==================================================
-   MOBILE RESIZE
-================================================== */
+/* MOBILE RESIZE */
 
 function resizeMap() {
 
@@ -1350,9 +1347,7 @@ window.addEventListener(
 );
 
 
-/* ==================================================
-   START
-================================================== */
+/* START */
 
 updateSliderRange();
 
@@ -1365,7 +1360,6 @@ refreshAIS();
 
 /*
   Reload local ais.json every five minutes.
-  GitHub Action updates the file hourly.
 */
 
 setInterval(
