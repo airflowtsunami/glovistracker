@@ -71,16 +71,12 @@ body {
   top: 70px;
   left: 8px;
   right: 8px;
-
   background: rgba(0,194,255,.94);
   color: #00121f;
-
   padding: 8px 11px;
   border-radius: 9px;
-
   font-size: 12px;
   line-height: 1.35;
-
   box-shadow: 0 4px 15px rgba(0,0,0,.3);
 }
 
@@ -92,7 +88,6 @@ body {
 #controls {
   flex: 0 0 auto;
   width: 100%;
-
   background: #0c1d2d;
   border-top: 1px solid #21384b;
 
@@ -189,11 +184,9 @@ button:hover {
   background: #ffd400;
   border: 3px solid white;
   border-radius: 50%;
-
   box-shadow:
     0 0 0 0 rgba(255,212,0,.75),
     0 2px 8px rgba(0,0,0,.65);
-
   animation: pulseAIS 1.8s infinite;
 }
 
@@ -292,7 +285,7 @@ button:hover {
 
   <div class="sliderLabels">
     <span>Last AIS</span>
-    <span>22 Aug · Suva</span>
+    <span>22 Aug · Fiji</span>
     <span>31 Aug · Auckland</span>
   </div>
 
@@ -320,6 +313,11 @@ const SUVA = {
   time: new Date("2026-08-22T17:30:00+12:00")
 };
 
+const LAUTOKA = {
+  name: "Lautoka",
+  lat: -17.6169,
+  lng: 177.4505
+};
 
 const AUCKLAND = {
   name: "Auckland",
@@ -329,7 +327,7 @@ const AUCKLAND = {
 };
 
 
-/* Built-in fallback */
+/* Built-in fallback AIS */
 
 let latestAIS = {
   lat: 33.862400,
@@ -352,7 +350,6 @@ const map =
     zoomControl: true
   });
 
-
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
@@ -362,7 +359,7 @@ L.tileLayer(
 ).addTo(map);
 
 
-/* PORTS */
+/* PORT MARKERS */
 
 function addPortMarker(point) {
 
@@ -389,7 +386,96 @@ function addPortMarker(point) {
 }
 
 addPortMarker(SUVA);
+addPortMarker(LAUTOKA);
 addPortMarker(AUCKLAND);
+
+
+/* AIS RANGE RINGS */
+
+const NM_TO_METERS = 1852;
+
+function addAisRing(point, nm, color, dash, label) {
+
+  L.circle(
+    [point.lat, point.lng],
+    {
+      radius: nm * NM_TO_METERS,
+      color: color,
+      weight: 2,
+      opacity: 0.75,
+      fillColor: color,
+      fillOpacity: 0.025,
+      dashArray: dash
+    }
+  )
+  .addTo(map)
+  .bindTooltip(
+    label,
+    {
+      permanent: false,
+      direction: "center",
+      className: "port-label"
+    }
+  );
+
+}
+
+
+/* Suva */
+
+addAisRing(
+  SUVA,
+  40,
+  "#00ff99",
+  "6 6",
+  "Suva · likely terrestrial AIS range ~40 nm"
+);
+
+addAisRing(
+  SUVA,
+  80,
+  "#ffd54a",
+  "10 8",
+  "Suva · possible AIS range ~80 nm"
+);
+
+
+/* Lautoka */
+
+addAisRing(
+  LAUTOKA,
+  40,
+  "#00ff99",
+  "6 6",
+  "Lautoka · likely terrestrial AIS range ~40 nm"
+);
+
+addAisRing(
+  LAUTOKA,
+  80,
+  "#ffd54a",
+  "10 8",
+  "Lautoka · possible AIS range ~80 nm"
+);
+
+
+/* Auckland */
+
+addAisRing(
+  AUCKLAND,
+  40,
+  "#00ff99",
+  "6 6",
+  "Auckland · likely terrestrial AIS range ~40 nm"
+);
+
+addAisRing(
+  AUCKLAND,
+  80,
+  "#ffd54a",
+  "10 8",
+  "Auckland · possible AIS range ~80 nm"
+);
 
 
 /* REAL AIS MARKER */
@@ -401,7 +487,6 @@ const aisIcon =
     iconSize: [26,26],
     iconAnchor: [13,13]
   });
-
 
 const aisMarker =
   L.marker(
@@ -432,7 +517,6 @@ const shipIcon =
     iconSize: [44,44],
     iconAnchor: [22,22]
   });
-
 
 const ship =
   L.marker(
@@ -467,7 +551,6 @@ const travelledLine =
   )
   .addTo(map);
 
-
 const futureRoute =
   L.polyline(
     [],
@@ -481,7 +564,7 @@ const futureRoute =
   .addTo(map);
 
 
-/* INTERPOLATION */
+/* HELPERS */
 
 function interpolate(a, b, fraction) {
 
@@ -500,6 +583,18 @@ function interpolate(a, b, fraction) {
       a.lng +
       (b.lng - a.lng) * f
   };
+}
+
+
+function distanceNm(lat1, lng1, lat2, lng2) {
+
+  const meters =
+    map.distance(
+      [lat1, lng1],
+      [lat2, lng2]
+    );
+
+  return meters / 1852;
 }
 
 
@@ -645,7 +740,6 @@ function getEstimatedPosition(selectedTime) {
 const slider =
   document.getElementById("slider");
 
-
 function updateSliderRange() {
 
   const totalHours =
@@ -666,7 +760,7 @@ function updateSliderRange() {
 }
 
 
-/* DATE FORMATTERS */
+/* FORMATTERS */
 
 const dateFormat =
   new Intl.DateTimeFormat(
@@ -681,7 +775,6 @@ const dateFormat =
     }
   );
 
-
 const checkedFormat =
   new Intl.DateTimeFormat(
     "en-NZ",
@@ -695,6 +788,90 @@ const checkedFormat =
   );
 
 
+/* AIS RANGE MESSAGE */
+
+function getAisRangeHint(p) {
+
+  const locations = [
+    {
+      point: SUVA,
+      name: "Suva"
+    },
+    {
+      point: LAUTOKA,
+      name: "Lautoka"
+    },
+    {
+      point: AUCKLAND,
+      name: "Auckland"
+    }
+  ];
+
+
+  let nearest =
+    null;
+
+
+  locations.forEach(item => {
+
+    const distance =
+      distanceNm(
+        p.lat,
+        p.lng,
+        item.point.lat,
+        item.point.lng
+      );
+
+
+    if (
+      !nearest ||
+      distance < nearest.distance
+    ) {
+
+      nearest = {
+        name: item.name,
+        distance: distance
+      };
+    }
+
+  });
+
+
+  if (!nearest) {
+    return "";
+  }
+
+
+  if (
+    nearest.distance <= 40
+  ) {
+
+    return (
+      ` · 📡 likely within ${nearest.name} terrestrial AIS range ` +
+      `(${nearest.distance.toFixed(0)} nm)`
+    );
+  }
+
+
+  if (
+    nearest.distance <= 80
+  ) {
+
+    return (
+      ` · 📡 approaching possible ${nearest.name} AIS range ` +
+      `(${nearest.distance.toFixed(0)} nm)`
+    );
+  }
+
+
+  return (
+    ` · nearest AIS area: ${nearest.name} ` +
+    `${nearest.distance.toFixed(0)} nm`
+  );
+
+}
+
+
 /* UPDATE DISPLAY */
 
 function updateVoyage(hours) {
@@ -705,15 +882,12 @@ function updateVoyage(hours) {
       hours * 3600000
     );
 
-
   const p =
     getEstimatedPosition(selected);
-
 
   ship.setLatLng(
     [p.lat, p.lng]
   );
-
 
   document
     .getElementById("dateDisplay")
@@ -762,11 +936,14 @@ function updateVoyage(hours) {
     "°" +
     (p.lat < 0 ? "S" : "N");
 
-
   const longitude =
     Math.abs(p.lng).toFixed(2) +
     "°" +
     (p.lng < 0 ? "W" : "E");
+
+
+  const aisHint =
+    getAisRangeHint(p);
 
 
   document
@@ -776,14 +953,15 @@ function updateVoyage(hours) {
       " · " +
       latitude +
       ", " +
-      longitude;
+      longitude +
+      aisHint;
 
 
   updateRouteLines(p);
 }
 
 
-/* ROUTE LINE DISPLAY */
+/* ROUTE DISPLAY */
 
 function updateRouteLines(p) {
 
@@ -902,7 +1080,6 @@ function goToday() {
       3600000
     );
 
-
   hours =
     Math.max(
       0,
@@ -911,7 +1088,6 @@ function goToday() {
         hours
       )
     );
-
 
   slider.value = hours;
 
@@ -927,7 +1103,6 @@ function goPlus7() {
     Date.now() +
     7 * 24 * 3600000;
 
-
   let hours =
     Math.round(
       (
@@ -938,7 +1113,6 @@ function goPlus7() {
       3600000
     );
 
-
   hours =
     Math.max(
       0,
@@ -947,7 +1121,6 @@ function goPlus7() {
         hours
       )
     );
-
 
   slider.value = hours;
 
@@ -963,7 +1136,6 @@ async function refreshAIS() {
     document.getElementById(
       "aisHeadline"
     );
-
 
   headline.innerHTML =
     "🟡 <strong>Checking latest saved Voyage Radar AIS…</strong>";
@@ -1186,19 +1358,10 @@ function fitMap() {
 
   const points = [
     [latestAIS.lat, latestAIS.lng],
+    [SUVA.lat, SUVA.lng],
+    [LAUTOKA.lat, LAUTOKA.lng],
     [AUCKLAND.lat, AUCKLAND.lng]
   ];
-
-
-  if (
-    latestAIS.time < SUVA.time
-  ) {
-    points.splice(
-      1,
-      0,
-      [SUVA.lat, SUVA.lng]
-    );
-  }
 
 
   map.fitBounds(
@@ -1287,14 +1450,12 @@ document
     goToday
   );
 
-
 document
   .getElementById("plus7Button")
   .addEventListener(
     "click",
     goPlus7
   );
-
 
 document
   .getElementById("refreshButton")
@@ -1303,14 +1464,12 @@ document
     refreshAIS
   );
 
-
 document
   .getElementById("playButton")
   .addEventListener(
     "click",
     playVoyage
   );
-
 
 slider.addEventListener(
   "input",
@@ -1334,12 +1493,10 @@ function resizeMap() {
   );
 }
 
-
 window.addEventListener(
   "resize",
   resizeMap
 );
-
 
 window.addEventListener(
   "orientationchange",
