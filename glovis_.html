@@ -16,357 +16,617 @@
 >
 
 <style>
-  * {
-    box-sizing: border-box;
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  background: #08131f;
+  color: white;
+}
+
+#map {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+
+/* ----------------------------------
+   TOP TITLE
+---------------------------------- */
+
+.header {
+  position: absolute;
+  z-index: 1000;
+
+  top: 10px;
+  left: 10px;
+
+  background: rgba(5,16,27,.94);
+
+  padding: 9px 12px;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 5px 20px rgba(0,0,0,.35);
+
+  max-width:
+    calc(100% - 20px);
+}
+
+.header h2 {
+  margin: 0 0 3px;
+  font-size: 18px;
+}
+
+.header .sub {
+  color: #9db0c3;
+  font-size: 11px;
+}
+
+
+/* ----------------------------------
+   AIS HEADLINE
+---------------------------------- */
+
+#aisHeadline {
+  position: absolute;
+  z-index: 1001;
+
+  top: 73px;
+  left: 10px;
+  right: 10px;
+
+  background:
+    rgba(0,194,255,.94);
+
+  color: #00121f;
+
+  padding: 8px 11px;
+
+  border-radius: 9px;
+
+  font-size: 12px;
+  line-height: 1.35;
+
+  box-shadow:
+    0 4px 15px rgba(0,0,0,.3);
+}
+
+#aisHeadline strong {
+  font-weight: 800;
+}
+
+#aisHeadline a {
+  color: inherit;
+  font-weight: 700;
+}
+
+#refreshInfo {
+  opacity: .75;
+}
+
+
+/* ----------------------------------
+   CONTROLS
+---------------------------------- */
+
+#controls {
+  flex: 0 0 auto;
+  width: 100%;
+
+  background: #0c1d2d;
+
+  border-top:
+    1px solid #21384b;
+
+  padding:
+    10px
+    max(14px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+}
+
+#dateDisplay {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+#status {
+  margin-top: 3px;
+
+  font-size: 11px;
+  color: #8fa8bd;
+
+  line-height: 1.35;
+}
+
+#slider {
+  display: block;
+  width: 100%;
+
+  margin: 11px 0 5px;
+
+  accent-color: #2e9fff;
+}
+
+.sliderLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+
+  font-size: 9px;
+  color: #8299ad;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  margin-top: 8px;
+}
+
+button {
+  border: 0;
+  border-radius: 7px;
+
+  padding: 7px 10px;
+
+  cursor: pointer;
+
+  background: #1d75b9;
+  color: white;
+
+  font-weight: 600;
+  font-size: 12px;
+}
+
+button:hover {
+  background: #2e95dd;
+}
+
+
+/* ----------------------------------
+   MAP MARKERS
+---------------------------------- */
+
+.ship-icon {
+  font-size: 36px;
+
+  filter:
+    drop-shadow(
+      0 3px 4px
+      rgba(0,0,0,.75)
+    );
+}
+
+.port-label {
+  background: #10283b;
+  color: white;
+
+  border:
+    1px solid #4f7188;
+
+  border-radius: 5px;
+
+  padding: 2px 6px;
+}
+
+.ais-label {
+  background: #ffd54a;
+  color: #111;
+
+  border:
+    1px solid #8d7415;
+
+  border-radius: 5px;
+
+  padding: 3px 7px;
+
+  font-weight: 800;
+}
+
+.current-label {
+  background: #ff6b35;
+  color: white;
+
+  border:
+    1px solid #8c2d0d;
+
+  border-radius: 5px;
+
+  padding: 3px 7px;
+
+  font-weight: 800;
+}
+
+
+/* ----------------------------------
+   YELLOW PULSING AIS DOT
+---------------------------------- */
+
+.ais-pulse {
+  width: 20px;
+  height: 20px;
+
+  background: #ffd400;
+
+  border:
+    3px solid white;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 0 rgba(255,212,0,.75),
+    0 2px 8px rgba(0,0,0,.65);
+
+  animation:
+    pulseAIS 1.8s infinite;
+}
+
+@keyframes pulseAIS {
+
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(255,212,0,.75),
+      0 2px 8px rgba(0,0,0,.65);
   }
 
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  70% {
+    box-shadow:
+      0 0 0 16px rgba(255,212,0,0),
+      0 2px 8px rgba(0,0,0,.65);
   }
 
-  body {
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    background: #08131f;
-    color: white;
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(255,212,0,0),
+      0 2px 8px rgba(0,0,0,.65);
   }
 
-  #map {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-  }
+}
+
+
+/* ----------------------------------
+   MOBILE
+---------------------------------- */
+
+@media (max-width: 600px) {
 
   .header {
-    position: absolute;
-    z-index: 1000;
-    top: 10px;
-    left: 10px;
-    background: rgba(5, 16, 27, 0.94);
-    padding: 10px 13px;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.35);
-    max-width: calc(100% - 20px);
+    top: 6px;
+    left: 6px;
+    right: 6px;
+
+    max-width: none;
+
+    padding: 7px 9px;
   }
 
   .header h2 {
-    margin: 0 0 3px 0;
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .header .sub {
-    color: #9db0c3;
-    font-size: 11px;
+    font-size: 9px;
   }
 
   #aisHeadline {
-    position: absolute;
-    z-index: 1001;
-    top: 76px;
-    left: 10px;
-    right: 10px;
-    background: rgba(0, 194, 255, 0.94);
-    color: #00121f;
-    padding: 8px 11px;
-    border-radius: 9px;
-    font-size: 12px;
-    line-height: 1.35;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,.3);
-  }
+    top: 52px;
+    left: 6px;
+    right: 6px;
 
-  #controls {
-    flex: 0 0 auto;
-    width: 100%;
-    background: #0c1d2d;
-    border-top: 1px solid #21384b;
-    padding:
-      10px
-      max(15px, env(safe-area-inset-right))
-      max(11px, env(safe-area-inset-bottom))
-      max(15px, env(safe-area-inset-left));
+    padding: 6px 8px;
+
+    font-size: 9.5px;
   }
 
   #dateDisplay {
-    font-size: 16px;
-    font-weight: 650;
+    font-size: 14px;
   }
 
   #status {
-    margin-top: 3px;
-    font-size: 11px;
-    color: #8fa8bd;
-    line-height: 1.35;
-  }
-
-  #slider {
-    width: 100%;
-    margin: 12px 0 6px;
-    accent-color: #2e9fff;
+    font-size: 9.5px;
   }
 
   .sliderLabels {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    color: #8299ad;
-    font-size: 10px;
-  }
-
-  .buttonRow {
-    display: flex;
-    gap: 7px;
-    flex-wrap: wrap;
-    margin-top: 8px;
+    font-size: 8px;
   }
 
   button {
-    border: 0;
-    border-radius: 7px;
-    padding: 7px 10px;
-    cursor: pointer;
-    background: #1d75b9;
-    color: white;
-    font-weight: 600;
-    font-size: 12px;
+    flex: 1 1 auto;
+
+    font-size: 10px;
+
+    padding:
+      6px 7px;
   }
 
-  button:hover {
-    background: #2e95dd;
-  }
+}
 
-  .ship-icon {
-    font-size: 34px;
-    filter: drop-shadow(0 3px 4px rgba(0,0,0,.7));
-  }
-
-  .port-label {
-    background: #10283b;
-    color: white;
-    border: 1px solid #4f7188;
-    border-radius: 5px;
-    padding: 2px 6px;
-  }
-
-  .ais-label {
-    background: #ffd54a;
-    color: #111;
-    border: 1px solid #8d7415;
-    border-radius: 5px;
-    padding: 3px 7px;
-    font-weight: 800;
-  }
-
-  .current-label {
-    background: #ff6b35;
-    color: white;
-    border: 1px solid #8c2d0d;
-    border-radius: 5px;
-    padding: 3px 7px;
-    font-weight: 800;
-  }
-
-  .ais-pulse {
-    width: 20px;
-    height: 20px;
-    background: #ffd400;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow:
-      0 0 0 0 rgba(255, 212, 0, 0.75),
-      0 2px 8px rgba(0,0,0,.65);
-    animation: pulseAIS 1.8s infinite;
-  }
-
-  @keyframes pulseAIS {
-    0% {
-      box-shadow:
-        0 0 0 0 rgba(255, 212, 0, 0.75),
-        0 2px 8px rgba(0,0,0,.65);
-    }
-
-    70% {
-      box-shadow:
-        0 0 0 16px rgba(255, 212, 0, 0),
-        0 2px 8px rgba(0,0,0,.65);
-    }
-
-    100% {
-      box-shadow:
-        0 0 0 0 rgba(255, 212, 0, 0),
-        0 2px 8px rgba(0,0,0,.65);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .header {
-      top: 6px;
-      left: 6px;
-      right: 6px;
-      max-width: none;
-      padding: 7px 9px;
-    }
-
-    .header h2 {
-      font-size: 14px;
-    }
-
-    .header .sub {
-      font-size: 9px;
-    }
-
-    #aisHeadline {
-      top: 53px;
-      left: 6px;
-      right: 6px;
-      padding: 6px 8px;
-      font-size: 10px;
-    }
-
-    #dateDisplay {
-      font-size: 14px;
-    }
-
-    #status {
-      font-size: 10px;
-    }
-
-    .sliderLabels {
-      font-size: 8px;
-    }
-
-    button {
-      flex: 1 1 auto;
-      font-size: 11px;
-      padding: 7px 8px;
-    }
-  }
 </style>
 </head>
 
+
 <body>
 
+
 <div class="header">
-  <h2>🚢 GLOVIS CENTURY</h2>
+
+  <h2>
+    🚢 GLOVIS CENTURY
+  </h2>
+
   <div class="sub">
     IMO 9590589 · Tesla voyage tracker
   </div>
+
 </div>
 
-<a
-  id="aisHeadline"
-  href="https://www.myshiptracking.com/vessels/glovis-century-mmsi-441200000-imo-9590589"
-  target="_blank"
-  rel="noopener"
->
-  🚢 <strong>Checking latest public AIS...</strong>
-</a>
+
+<div id="aisHeadline">
+
+  🟡
+  <strong>
+    Loading latest Voyage Radar AIS...
+  </strong>
+
+</div>
+
 
 <div id="map"></div>
+
 
 <div id="controls">
 
   <div id="dateDisplay"></div>
+
   <div id="status"></div>
+
 
   <input
     id="slider"
     type="range"
     min="0"
-    max="672"
     value="0"
     step="1"
   >
 
+
   <div class="sliderLabels">
-    <span>11 Aug · Last AIS</span>
-    <span>22 Aug · Suva</span>
-    <span>31 Aug · Auckland</span>
+
+    <span>
+      Last AIS
+    </span>
+
+    <span>
+      22 Aug · Suva
+    </span>
+
+    <span>
+      31 Aug · Auckland
+    </span>
+
   </div>
 
+
   <div class="buttonRow">
-    <button onclick="goToday()">Today</button>
-    <button onclick="goPlus7()">+7 days</button>
-    <button id="playButton" onclick="playVoyage()">▶ Play voyage</button>
+
+    <button id="todayButton">
+      Today
+    </button>
+
+    <button id="plus7Button">
+      +7 days
+    </button>
+
+    <button id="refreshButton">
+      ↻ Refresh AIS
+    </button>
+
+    <button id="playButton">
+      ▶ Play
+    </button>
+
   </div>
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
 
 <script>
 
-// --------------------------------------------------
-// MAP
-// --------------------------------------------------
+/* ==================================================
+   SOURCE
+================================================== */
 
-const map = L.map("map", {
-  zoomControl: true
-}).setView([-5, 155], 4);
+const VOYAGE_RADAR_URL =
+  "https://aisvesseltracker.com/vessel/glovis-century-mmsi-441200000-imo-9590589";
+
+
+/* ==================================================
+   MAP
+================================================== */
+
+const map =
+  L.map(
+    "map",
+    {
+      zoomControl: true
+    }
+  )
+  .setView(
+    [-5,155],
+    4
+  );
+
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 10,
-    attribution: "&copy; OpenStreetMap contributors"
+
+    attribution:
+      "&copy; OpenStreetMap contributors"
   }
-).addTo(map);
+)
+.addTo(map);
 
 
-// --------------------------------------------------
-// FIXED DESTINATIONS
-// --------------------------------------------------
+/* ==================================================
+   DESTINATION WAYPOINTS
+================================================== */
+
+/*
+  Suva ETA supplied for this voyage:
+  22 Aug 2026 17:30 Fiji time
+*/
 
 const SUVA = {
-  name: "Suva",
-  lat: -18.1416,
-  lng: 178.4419,
-  time: new Date("2026-08-22T17:30:00+12:00")
+
+  name:
+    "Suva",
+
+  lat:
+    -18.1416,
+
+  lng:
+    178.4419,
+
+  time:
+    new Date(
+      "2026-08-22T17:30:00+12:00"
+    )
+
 };
+
+
+/*
+  Auckland scheduled arrival:
+  31 Aug 2026 00:00 NZ time
+*/
 
 const AUCKLAND = {
-  name: "Auckland",
-  lat: -36.8406,
-  lng: 174.7850,
-  time: new Date("2026-08-31T00:00:00+12:00")
+
+  name:
+    "Auckland",
+
+  lat:
+    -36.8406,
+
+  lng:
+    174.7850,
+
+  time:
+    new Date(
+      "2026-08-31T00:00:00+12:00"
+    )
+
 };
 
 
-// --------------------------------------------------
-// FALLBACK LAST AIS
-// --------------------------------------------------
+/* ==================================================
+   VERIFIED FALLBACK AIS
+================================================== */
+
+/*
+  Voyage Radar currently reports:
+
+  33.862400 N
+  134.994670 E
+  11 Aug 2026 11:01 UTC
+  13.6 knots
+  COG 161.5 degrees
+
+  This remains available if automatic
+  refreshing fails.
+*/
 
 let latestAIS = {
-  lat: 33.86239,
-  lng: 134.99467,
-  time: new Date("2026-08-11T11:01:00+09:00"),
-  reported: "11 Aug 2026 11:01",
-  speed: 13.6,
-  course: 161.5,
-  source: "fallback"
+
+  lat:
+    33.862400,
+
+  lng:
+    134.994670,
+
+  time:
+    new Date(
+      "2026-08-11T11:01:00Z"
+    ),
+
+  reported:
+    "11 Aug 2026, 11:01 UTC",
+
+  speed:
+    13.6,
+
+  course:
+    161.5,
+
+  waterBody:
+    "Philippine Sea",
+
+  liveFetch:
+    false
+
 };
 
 
-// --------------------------------------------------
-// PORT MARKERS
-// --------------------------------------------------
+/* ==================================================
+   PORT MARKERS
+================================================== */
 
 function addPortMarker(point) {
+
   L.circleMarker(
-    [point.lat, point.lng],
+    [
+      point.lat,
+      point.lng
+    ],
     {
       radius: 6,
-      color: "#ffffff",
-      weight: 2,
-      fillColor: "#1a89d9",
-      fillOpacity: 1
+
+      color:
+        "#ffffff",
+
+      weight:
+        2,
+
+      fillColor:
+        "#1a89d9",
+
+      fillOpacity:
+        1
     }
   )
   .addTo(map)
@@ -374,591 +634,1222 @@ function addPortMarker(point) {
     point.name,
     {
       permanent: true,
-      direction: "top",
-      className: "port-label"
+
+      direction:
+        "top",
+
+      className:
+        "port-label"
     }
   );
+
 }
 
-addPortMarker(SUVA);
-addPortMarker(AUCKLAND);
 
+addPortMarker(
+  SUVA
+);
 
-// --------------------------------------------------
-// AIS MARKER
-// --------------------------------------------------
-
-const aisIcon = L.divIcon({
-  html: '<div class="ais-pulse"></div>',
-  className: "",
-  iconSize: [26, 26],
-  iconAnchor: [13, 13]
-});
-
-const aisMarker = L.marker(
-  [latestAIS.lat, latestAIS.lng],
-  {
-    icon: aisIcon,
-    zIndexOffset: 3000
-  }
-)
-.addTo(map)
-.bindTooltip(
-  "Last public AIS",
-  {
-    permanent: true,
-    direction: "right",
-    offset: [12, 0],
-    className: "ais-label"
-  }
+addPortMarker(
+  AUCKLAND
 );
 
 
-// --------------------------------------------------
-// MOVING BOAT
-// --------------------------------------------------
+/* ==================================================
+   LAST REAL AIS MARKER
+================================================== */
 
-const shipIcon = L.divIcon({
-  html: '<div class="ship-icon">🚢</div>',
-  className: "",
-  iconSize: [42, 42],
-  iconAnchor: [21, 21]
-});
+const aisIcon =
+  L.divIcon(
+    {
+      html:
+        '<div class="ais-pulse"></div>',
 
-const ship = L.marker(
-  [latestAIS.lat, latestAIS.lng],
-  {
-    icon: shipIcon,
-    zIndexOffset: 4000
-  }
-)
-.addTo(map)
-.bindTooltip(
-  "Estimated current position",
-  {
-    permanent: true,
-    direction: "right",
-    offset: [18, 0],
-    className: "current-label"
-  }
-);
+      className:
+        "",
+
+      iconSize:
+        [26,26],
+
+      iconAnchor:
+        [13,13]
+    }
+  );
 
 
-// --------------------------------------------------
-// ROUTE LINES
-// --------------------------------------------------
+const aisMarker =
+  L.marker(
+    [
+      latestAIS.lat,
+      latestAIS.lng
+    ],
+    {
+      icon:
+        aisIcon,
 
-let futureRoute = L.polyline(
-  [],
-  {
-    color: "#469fe1",
-    weight: 3,
-    opacity: 0.5,
-    dashArray: "8 8"
-  }
-).addTo(map);
+      zIndexOffset:
+        3000
+    }
+  )
+  .addTo(map)
+  .bindTooltip(
+    "Last real AIS",
+    {
+      permanent:
+        true,
 
-let travelledLine = L.polyline(
-  [],
-  {
-    color: "#00c2ff",
-    weight: 5,
-    opacity: 0.95
-  }
-).addTo(map);
+      direction:
+        "right",
+
+      offset:
+        [12,0],
+
+      className:
+        "ais-label"
+    }
+  );
 
 
-// --------------------------------------------------
-// INTERPOLATION
-// --------------------------------------------------
+/* ==================================================
+   ESTIMATED BOAT
+================================================== */
 
-function interpolate(a, b, fraction) {
+const shipIcon =
+  L.divIcon(
+    {
+      html:
+        '<div class="ship-icon">🚢</div>',
+
+      className:
+        "",
+
+      iconSize:
+        [44,44],
+
+      iconAnchor:
+        [22,22]
+    }
+  );
+
+
+const ship =
+  L.marker(
+    [
+      latestAIS.lat,
+      latestAIS.lng
+    ],
+    {
+      icon:
+        shipIcon,
+
+      zIndexOffset:
+        4000
+    }
+  )
+  .addTo(map)
+  .bindTooltip(
+    "Estimated position",
+    {
+      permanent:
+        true,
+
+      direction:
+        "right",
+
+      offset:
+        [18,0],
+
+      className:
+        "current-label"
+    }
+  );
+
+
+/* ==================================================
+   ROUTE LINES
+================================================== */
+
+const travelledLine =
+  L.polyline(
+    [],
+    {
+      color:
+        "#00c2ff",
+
+      weight:
+        5,
+
+      opacity:
+        .95
+    }
+  )
+  .addTo(map);
+
+
+const futureRoute =
+  L.polyline(
+    [],
+    {
+      color:
+        "#469fe1",
+
+      weight:
+        3,
+
+      opacity:
+        .55,
+
+      dashArray:
+        "8 8"
+    }
+  )
+  .addTo(map);
+
+
+/* ==================================================
+   INTERPOLATION
+================================================== */
+
+function interpolate(
+  a,
+  b,
+  fraction
+) {
+
   return {
-    lat: a.lat + (b.lat - a.lat) * fraction,
-    lng: a.lng + (b.lng - a.lng) * fraction
+
+    lat:
+      a.lat +
+      (
+        b.lat -
+        a.lat
+      ) *
+      fraction,
+
+    lng:
+      a.lng +
+      (
+        b.lng -
+        a.lng
+      ) *
+      fraction
+
   };
+
 }
 
 
-// --------------------------------------------------
-// POSITION FOR ANY DATE
-// --------------------------------------------------
+/* ==================================================
+   ESTIMATED POSITION
+================================================== */
 
-function getEstimatedPosition(time) {
+function getEstimatedPosition(
+  selectedTime
+) {
 
-  const aisTime = latestAIS.time;
-  const suvaTime = SUVA.time;
-  const aucklandTime = AUCKLAND.time;
+  const aisTime =
+    latestAIS.time;
 
-  if (time <= aisTime) {
+  const suvaTime =
+    SUVA.time;
+
+  const aucklandTime =
+    AUCKLAND.time;
+
+
+  if (
+    selectedTime <= aisTime
+  ) {
+
     return {
-      lat: latestAIS.lat,
-      lng: latestAIS.lng,
-      leg: "AIS"
+
+      lat:
+        latestAIS.lat,
+
+      lng:
+        latestAIS.lng,
+
+      leg:
+        "AIS"
+
     };
+
   }
 
-  if (time <= suvaTime) {
+
+  if (
+    selectedTime <= suvaTime
+  ) {
 
     const fraction =
-      (time - aisTime) /
-      (suvaTime - aisTime);
+      (
+        selectedTime -
+        aisTime
+      )
+      /
+      (
+        suvaTime -
+        aisTime
+      );
 
-    const p = interpolate(
-      latestAIS,
-      SUVA,
-      fraction
-    );
+
+    const p =
+      interpolate(
+        latestAIS,
+        SUVA,
+        Math.max(
+          0,
+          Math.min(
+            1,
+            fraction
+          )
+        )
+      );
+
 
     return {
+
       ...p,
-      leg: "AIS_TO_SUVA"
+
+      leg:
+        "AIS_TO_SUVA"
+
     };
+
   }
 
-  if (time <= aucklandTime) {
+
+  if (
+    selectedTime <= aucklandTime
+  ) {
 
     const fraction =
-      (time - suvaTime) /
-      (aucklandTime - suvaTime);
+      (
+        selectedTime -
+        suvaTime
+      )
+      /
+      (
+        aucklandTime -
+        suvaTime
+      );
 
-    const p = interpolate(
-      SUVA,
-      AUCKLAND,
-      fraction
-    );
+
+    const p =
+      interpolate(
+        SUVA,
+        AUCKLAND,
+        Math.max(
+          0,
+          Math.min(
+            1,
+            fraction
+          )
+        )
+      );
+
 
     return {
+
       ...p,
-      leg: "SUVA_TO_AUCKLAND"
+
+      leg:
+        "SUVA_TO_AUCKLAND"
+
     };
+
   }
+
 
   return {
-    lat: AUCKLAND.lat,
-    lng: AUCKLAND.lng,
-    leg: "AUCKLAND"
+
+    lat:
+      AUCKLAND.lat,
+
+    lng:
+      AUCKLAND.lng,
+
+    leg:
+      "AUCKLAND"
+
   };
+
 }
 
 
-// --------------------------------------------------
-// SLIDER RANGE
-// --------------------------------------------------
+/* ==================================================
+   SLIDER RANGE
+================================================== */
 
 const slider =
-  document.getElementById("slider");
+  document.getElementById(
+    "slider"
+  );
+
 
 function updateSliderRange() {
 
-  const start =
-    latestAIS.time.getTime();
-
-  const end =
-    AUCKLAND.time.getTime();
-
   const totalHours =
-    Math.round(
-      (end - start) /
-      3600000
+    Math.max(
+      1,
+
+      Math.round(
+        (
+          AUCKLAND.time.getTime()
+          -
+          latestAIS.time.getTime()
+        )
+        /
+        3600000
+      )
     );
 
-  slider.min = 0;
-  slider.max = totalHours;
+
+  slider.min =
+    0;
+
+  slider.max =
+    totalHours;
+
 }
 
 
-// --------------------------------------------------
-// DISPLAY DATE
-// --------------------------------------------------
+/* ==================================================
+   DATE FORMAT
+================================================== */
 
 const dateFormat =
   new Intl.DateTimeFormat(
     "en-NZ",
     {
-      timeZone: "Pacific/Auckland",
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "numeric",
-      minute: "2-digit"
+      timeZone:
+        "Pacific/Auckland",
+
+      weekday:
+        "short",
+
+      day:
+        "numeric",
+
+      month:
+        "short",
+
+      hour:
+        "numeric",
+
+      minute:
+        "2-digit"
     }
   );
 
 
-// --------------------------------------------------
-// UPDATE MAP
-// --------------------------------------------------
+/* ==================================================
+   DISPLAY SELECTED DATE
+================================================== */
 
-function updateVoyage(hours) {
+function updateVoyage(
+  hours
+) {
 
   const selected =
     new Date(
-      latestAIS.time.getTime() +
-      hours * 3600000
+      latestAIS.time.getTime()
+      +
+      hours *
+      3600000
     );
 
+
   const p =
-    getEstimatedPosition(selected);
+    getEstimatedPosition(
+      selected
+    );
+
 
   ship.setLatLng(
-    [p.lat, p.lng]
+    [
+      p.lat,
+      p.lng
+    ]
   );
 
-  document.getElementById(
+
+  document
+  .getElementById(
     "dateDisplay"
-  ).textContent =
-    dateFormat.format(selected);
+  )
+  .textContent =
+    dateFormat.format(
+      selected
+    );
 
 
-  let status = "";
-
-  if (p.leg === "AIS") {
-    status = "Last real public AIS position";
-  }
-
-  if (p.leg === "AIS_TO_SUVA") {
-    status = "Estimated position · last AIS → Suva";
-  }
-
-  if (p.leg === "SUVA_TO_AUCKLAND") {
-    status = "Estimated position · Suva → Auckland";
-  }
-
-  if (p.leg === "AUCKLAND") {
-    status = "📍 Auckland — scheduled arrival";
-  }
+  let status;
 
 
-  const latitude =
-    Math.abs(p.lat).toFixed(2) +
-    "°" +
-    (p.lat < 0 ? "S" : "N");
+  if (
+    p.leg === "AIS"
+  ) {
 
-  const longitude =
-    Math.abs(p.lng).toFixed(2) +
-    "°" +
-    (p.lng < 0 ? "W" : "E");
-
-  document.getElementById(
-    "status"
-  ).textContent =
-    status +
-    " · " +
-    latitude +
-    ", " +
-    longitude;
-
-
-  // -----------------------------------------------
-  // ROUTE COLOURS
-  // -----------------------------------------------
-
-  if (p.leg === "AIS_TO_SUVA") {
-
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [p.lat, p.lng]
-    ]);
-
-    futureRoute.setLatLngs([
-      [p.lat, p.lng],
-      [SUVA.lat, SUVA.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
+    status =
+      "Last actual Voyage Radar AIS position";
 
   }
 
-  else if (p.leg === "SUVA_TO_AUCKLAND") {
+  else if (
+    p.leg === "AIS_TO_SUVA"
+  ) {
 
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [SUVA.lat, SUVA.lng],
-      [p.lat, p.lng]
-    ]);
-
-    futureRoute.setLatLngs([
-      [p.lat, p.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
+    status =
+      "Estimated position · latest AIS → Suva";
 
   }
 
-  else if (p.leg === "AUCKLAND") {
+  else if (
+    p.leg === "SUVA_TO_AUCKLAND"
+  ) {
 
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [SUVA.lat, SUVA.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
-
-    futureRoute.setLatLngs([]);
+    status =
+      "Estimated position · Suva → Auckland";
 
   }
 
   else {
 
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng]
-    ]);
+    status =
+      "📍 Auckland · scheduled arrival";
 
-    futureRoute.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [SUVA.lat, SUVA.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
   }
+
+
+  const latitude =
+    Math.abs(
+      p.lat
+    )
+    .toFixed(2)
+    +
+    "°"
+    +
+    (
+      p.lat < 0
+      ? "S"
+      : "N"
+    );
+
+
+  const longitude =
+    Math.abs(
+      p.lng
+    )
+    .toFixed(2)
+    +
+    "°"
+    +
+    (
+      p.lng < 0
+      ? "W"
+      : "E"
+    );
+
+
+  document
+  .getElementById(
+    "status"
+  )
+  .textContent =
+
+    status
+    +
+    " · "
+    +
+    latitude
+    +
+    ", "
+    +
+    longitude;
+
+
+  /* --------------------------------
+     ROUTE SEGMENTS
+  -------------------------------- */
+
+
+  if (
+    p.leg ===
+    "AIS_TO_SUVA"
+  ) {
+
+    travelledLine
+    .setLatLngs(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ],
+        [
+          p.lat,
+          p.lng
+        ]
+      ]
+    );
+
+
+    futureRoute
+    .setLatLngs(
+      [
+        [
+          p.lat,
+          p.lng
+        ],
+        [
+          SUVA.lat,
+          SUVA.lng
+        ],
+        [
+          AUCKLAND.lat,
+          AUCKLAND.lng
+        ]
+      ]
+    );
+
+  }
+
+
+  else if (
+    p.leg ===
+    "SUVA_TO_AUCKLAND"
+  ) {
+
+    travelledLine
+    .setLatLngs(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ],
+        [
+          SUVA.lat,
+          SUVA.lng
+        ],
+        [
+          p.lat,
+          p.lng
+        ]
+      ]
+    );
+
+
+    futureRoute
+    .setLatLngs(
+      [
+        [
+          p.lat,
+          p.lng
+        ],
+        [
+          AUCKLAND.lat,
+          AUCKLAND.lng
+        ]
+      ]
+    );
+
+  }
+
+
+  else if (
+    p.leg ===
+    "AUCKLAND"
+  ) {
+
+    travelledLine
+    .setLatLngs(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ],
+        [
+          SUVA.lat,
+          SUVA.lng
+        ],
+        [
+          AUCKLAND.lat,
+          AUCKLAND.lng
+        ]
+      ]
+    );
+
+
+    futureRoute
+    .setLatLngs(
+      []
+    );
+
+  }
+
+
+  else {
+
+    travelledLine
+    .setLatLngs(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ]
+      ]
+    );
+
+
+    futureRoute
+    .setLatLngs(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ],
+        [
+          SUVA.lat,
+          SUVA.lng
+        ],
+        [
+          AUCKLAND.lat,
+          AUCKLAND.lng
+        ]
+      ]
+    );
+
+  }
+
 }
 
 
-// --------------------------------------------------
-// TODAY
-// --------------------------------------------------
+/* ==================================================
+   TODAY
+================================================== */
 
 function goToday() {
-
-  const now =
-    new Date();
 
   let hours =
     Math.round(
       (
-        now.getTime() -
+        Date.now()
+        -
         latestAIS.time.getTime()
-      ) /
+      )
+      /
       3600000
     );
+
 
   hours =
     Math.max(
       0,
       Math.min(
-        Number(slider.max),
+        Number(
+          slider.max
+        ),
         hours
       )
     );
 
+
   slider.value =
     hours;
 
-  updateVoyage(hours);
+
+  updateVoyage(
+    hours
+  );
+
 }
 
 
-// --------------------------------------------------
-// +7 DAYS
-// --------------------------------------------------
+/* ==================================================
+   +7 DAYS
+================================================== */
 
 function goPlus7() {
 
   const target =
-    new Date(
-      Date.now() +
-      7 * 24 * 3600000
-    );
+    Date.now()
+    +
+    7 *
+    24 *
+    3600000;
+
 
   let hours =
     Math.round(
       (
-        target.getTime() -
+        target
+        -
         latestAIS.time.getTime()
-      ) /
+      )
+      /
       3600000
     );
+
 
   hours =
     Math.max(
       0,
       Math.min(
-        Number(slider.max),
+        Number(
+          slider.max
+        ),
         hours
       )
     );
 
+
   slider.value =
     hours;
 
-  updateVoyage(hours);
+
+  updateVoyage(
+    hours
+  );
+
 }
 
 
-// --------------------------------------------------
-// PLAY
-// --------------------------------------------------
+/* ==================================================
+   PARSE VOYAGE RADAR PAGE
+================================================== */
 
-let timer = null;
+function parseVoyageRadar(
+  text
+) {
 
-function playVoyage() {
-
-  const button =
-    document.getElementById("playButton");
-
-  if (timer) {
-
-    clearInterval(timer);
-    timer = null;
-
-    button.textContent =
-      "▶ Play voyage";
-
-    return;
-  }
-
-  slider.value = 0;
-  updateVoyage(0);
-
-  button.textContent =
-    "⏸ Pause";
-
-  timer =
-    setInterval(
-      () => {
-
-        let hours =
-          Number(slider.value) + 3;
-
-        if (
-          hours >
-          Number(slider.max)
-        ) {
-
-          clearInterval(timer);
-          timer = null;
-
-          button.textContent =
-            "▶ Play voyage";
-
-          return;
-        }
-
-        slider.value = hours;
-        updateVoyage(hours);
-
-      },
-      40
-    );
-}
+  /*
+    Works with either raw page HTML
+    or the text-reader representation.
+  */
 
 
-// --------------------------------------------------
-// SLIDER EVENT
-// --------------------------------------------------
-
-slider.addEventListener(
-  "input",
-  () => {
-    updateVoyage(
-      Number(slider.value)
-    );
-  }
-);
-
-
-// --------------------------------------------------
-// PUBLIC AIS LOOKUP
-// --------------------------------------------------
-
-const VESSEL_PAGE =
-  "https://www.myshiptracking.com/vessels/glovis-century-mmsi-441200000-imo-9590589";
-
-const CORS_PROXY =
-  "https://api.allorigins.win/raw?url=";
-
-
-async function getLatestAIS() {
-
-  const target =
-    CORS_PROXY +
-    encodeURIComponent(VESSEL_PAGE) +
-    "&t=" +
-    Date.now();
-
-  const response =
-    await fetch(
-      target,
-      {
-        cache: "no-store"
-      }
+  let latMatch =
+    text.match(
+      /Latitude\s*[:\s]*([+-]?\d{1,2}\.\d+)/i
     );
 
-  if (!response.ok) {
-    throw new Error(
-      "AIS lookup HTTP " +
-      response.status
-    );
-  }
 
-  const html =
-    await response.text();
-
-
-  const positionMatch =
-    html.match(
-      /coordinates\s+([-\d.]+)°\s*\/\s*([-\d.]+)°\s+as reported on\s+([\d-]+\s+[\d:]+)/i
-    );
-
-  if (!positionMatch) {
-    throw new Error(
-      "AIS coordinates not found"
-    );
-  }
-
-  const lat =
-    parseFloat(positionMatch[1]);
-
-  const lng =
-    parseFloat(positionMatch[2]);
-
-  const reportedRaw =
-    positionMatch[3];
-
-
-  const speedMatch =
-    html.match(
-      /current speed is\s+([\d.]+)\s+Knots/i
-    );
-
-  const courseMatch =
-    html.match(
-      /Course[\s\S]{0,200}?([\d.]+)°/i
+  let lngMatch =
+    text.match(
+      /Longitude\s*[:\s]*([+-]?\d{1,3}\.\d+)/i
     );
 
 
   /*
-    MyShipTracking's displayed timestamp is
-    treated here as Japan local time for the
-    last fix around Japan.
+    Backup:
+    use "position xx.x°N, xxx.x°E"
   */
 
-  const time =
-    new Date(
-      reportedRaw
-        .replace(" ", "T") +
-      ":00+09:00"
+  if (
+    !latMatch ||
+    !lngMatch
+  ) {
+
+    const position =
+      text.match(
+        /position\s+([0-9.]+)°([NS]),\s*([0-9.]+)°([EW])/i
+      );
+
+
+    if (
+      position
+    ) {
+
+      const rawLat =
+        Number(
+          position[1]
+        );
+
+      const rawLng =
+        Number(
+          position[3]
+        );
+
+
+      latMatch =
+        [
+          "",
+          position[2]
+          .toUpperCase() === "S"
+          ? -rawLat
+          : rawLat
+        ];
+
+
+      lngMatch =
+        [
+          "",
+          position[4]
+          .toUpperCase() === "W"
+          ? -rawLng
+          : rawLng
+        ];
+
+    }
+
+  }
+
+
+  if (
+    !latMatch ||
+    !lngMatch
+  ) {
+
+    throw new Error(
+      "Voyage Radar coordinates were not found"
+    );
+
+  }
+
+
+  const speedMatch =
+    text.match(
+      /Speed\s*[:\s]*([0-9.]+)\s*kn/i
+    )
+    ||
+    text.match(
+      /moving at\s+([0-9.]+)\s+knots/i
     );
 
 
+  const courseMatch =
+    text.match(
+      /Course Over Ground\s*\(COG\)\s*[:\s]*([0-9.]+)°/i
+    );
+
+
+  const waterMatch =
+    text.match(
+      /Water Body\s*[:\s]*([A-Za-z ]+)/i
+    );
+
+
+  const updateMatch =
+    text.match(
+      /Last Update\s*\(UTC\)[\s\S]{0,120}?(\d{1,2}\s+[A-Za-z]{3}\s+\d{4},?\s+\d{1,2}:\d{2}\s+UTC)/i
+    )
+    ||
+    text.match(
+      /Position last updated\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4},?\s+\d{1,2}:\d{2}\s+UTC)/i
+    );
+
+
+  const reported =
+    updateMatch
+    ? updateMatch[1]
+    : "Unknown time";
+
+
+  let parsedTime =
+    new Date(
+      reported
+    );
+
+
+  if (
+    isNaN(
+      parsedTime.getTime()
+    )
+  ) {
+
+    /*
+      Keep the current known timestamp
+      if parsing fails.
+    */
+
+    parsedTime =
+      latestAIS.time;
+
+  }
+
+
   return {
-    lat,
-    lng,
-    time,
-    reported: reportedRaw,
+
+    lat:
+      Number(
+        latMatch[1]
+      ),
+
+    lng:
+      Number(
+        lngMatch[1]
+      ),
+
     speed:
       speedMatch
-        ? parseFloat(speedMatch[1])
-        : null,
+      ? Number(
+          speedMatch[1]
+        )
+      : null,
+
     course:
       courseMatch
-        ? parseFloat(courseMatch[1])
-        : null,
-    source: "MyShipTracking"
+      ? Number(
+          courseMatch[1]
+        )
+      : null,
+
+    waterBody:
+      waterMatch
+      ? waterMatch[1].trim()
+      : "Unknown",
+
+    reported:
+      reported,
+
+    time:
+      parsedTime
+
   };
+
 }
 
 
-// --------------------------------------------------
-// REFRESH AIS
-// --------------------------------------------------
+/* ==================================================
+   FETCH METHOD 1:
+   DIRECT
+================================================== */
+
+async function fetchDirect() {
+
+  const response =
+    await fetch(
+      VOYAGE_RADAR_URL
+      +
+      "?nocache="
+      +
+      Date.now(),
+
+      {
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      "Direct HTTP "
+      +
+      response.status
+    );
+
+  }
+
+
+  return await
+    response.text();
+
+}
+
+
+/* ==================================================
+   FETCH METHOD 2:
+   JINA TEXT READER
+================================================== */
+
+async function fetchViaReader() {
+
+  const readerURL =
+    "https://r.jina.ai/http://"
+    +
+    VOYAGE_RADAR_URL
+      .replace(
+        /^https?:\/\//,
+        ""
+      );
+
+
+  const response =
+    await fetch(
+      readerURL
+      +
+      "?nocache="
+      +
+      Date.now(),
+
+      {
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      "Reader HTTP "
+      +
+      response.status
+    );
+
+  }
+
+
+  return await
+    response.text();
+
+}
+
+
+/* ==================================================
+   FETCH METHOD 3:
+   ALLORIGINS
+================================================== */
+
+async function fetchViaAllOrigins() {
+
+  const url =
+    "https://api.allorigins.win/raw?url="
+    +
+    encodeURIComponent(
+      VOYAGE_RADAR_URL
+    )
+    +
+    "&nocache="
+    +
+    Date.now();
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      "AllOrigins HTTP "
+      +
+      response.status
+    );
+
+  }
+
+
+  return await
+    response.text();
+
+}
+
+
+/* ==================================================
+   TRY ALL SOURCES
+================================================== */
+
+async function getLatestAIS() {
+
+  const methods =
+    [
+      {
+        name:
+          "Voyage Radar direct",
+
+        fn:
+          fetchDirect
+      },
+
+      {
+        name:
+          "Voyage Radar reader",
+
+        fn:
+          fetchViaReader
+      },
+
+      {
+        name:
+          "Voyage Radar proxy",
+
+        fn:
+          fetchViaAllOrigins
+      }
+    ];
+
+
+  let lastError =
+    null;
+
+
+  for (
+    const method of methods
+  ) {
+
+    try {
+
+      console.log(
+        "Trying:",
+        method.name
+      );
+
+
+      const text =
+        await method.fn();
+
+
+      const result =
+        parseVoyageRadar(
+          text
+        );
+
+
+      result.method =
+        method.name;
+
+
+      return result;
+
+    }
+
+
+    catch (
+      error
+    ) {
+
+      console.warn(
+        method.name,
+        error
+      );
+
+
+      lastError =
+        error;
+
+    }
+
+  }
+
+
+  throw (
+    lastError ||
+    new Error(
+      "All AIS lookup methods failed"
+    )
+  );
+
+}
+
+
+/* ==================================================
+   REFRESH AIS
+================================================== */
 
 async function refreshAIS() {
 
@@ -967,53 +1858,127 @@ async function refreshAIS() {
       "aisHeadline"
     );
 
+
+  const refreshButton =
+    document.getElementById(
+      "refreshButton"
+    );
+
+
+  refreshButton.disabled =
+    true;
+
+
+  refreshButton.textContent =
+    "Refreshing…";
+
+
+  headline.innerHTML =
+    "🟡 <strong>Checking Voyage Radar for a newer AIS fix…</strong>";
+
+
   try {
-
-    headline.innerHTML =
-      "🚢 <strong>Checking latest public AIS...</strong>";
-
 
     const ais =
       await getLatestAIS();
 
 
-    latestAIS =
-      ais;
+    /*
+      Only replace our current AIS if
+      the new point has a sensible
+      timestamp.
+    */
+
+    if (
+      ais.time &&
+      !isNaN(
+        ais.time.getTime()
+      )
+    ) {
+
+      latestAIS = {
+
+        ...latestAIS,
+
+        ...ais,
+
+        liveFetch:
+          true
+
+      };
+
+    }
 
 
-    aisMarker.setLatLng([
-      ais.lat,
-      ais.lng
-    ]);
+    aisMarker
+    .setLatLng(
+      [
+        latestAIS.lat,
+        latestAIS.lng
+      ]
+    );
 
 
-    aisMarker.setTooltipContent(
-      "Last public AIS · " +
-      ais.reported
+    aisMarker
+    .setTooltipContent(
+      "Last real AIS · "
+      +
+      latestAIS.reported
     );
 
 
     let headlineText =
-      `🚢 <strong>Last public AIS:</strong>
-      ${ais.reported}
-      · ${ais.lat.toFixed(5)}°,
-      ${ais.lng.toFixed(5)}°`;
+
+      `🟡
+       <strong>Voyage Radar AIS:</strong>
+       ${latestAIS.reported}
+       · ${latestAIS.lat.toFixed(5)}°,
+       ${latestAIS.lng.toFixed(5)}°`;
 
 
-    if (ais.speed !== null) {
+    if (
+      latestAIS.speed !== null
+    ) {
+
       headlineText +=
-        ` · ${ais.speed} kn`;
+        ` · ${latestAIS.speed} kn`;
+
     }
 
 
-    if (ais.course !== null) {
+    if (
+      latestAIS.course !== null
+    ) {
+
       headlineText +=
-        ` · course ${ais.course}°`;
+        ` · course ${latestAIS.course}°`;
+
+    }
+
+
+    if (
+      latestAIS.waterBody
+    ) {
+
+      headlineText +=
+        ` · ${latestAIS.waterBody}`;
+
     }
 
 
     headlineText +=
-      ` · <strong>orange boat = estimated current position</strong>`;
+
+      ` · <span id="refreshInfo">
+       refreshed via ${ais.method}
+       </span>
+
+       ·
+       <a
+       href="${VOYAGE_RADAR_URL}"
+       target="_blank"
+       rel="noopener">
+       source
+       </a>`;
 
 
     headline.innerHTML =
@@ -1022,115 +1987,345 @@ async function refreshAIS() {
 
     updateSliderRange();
 
+
     goToday();
 
 
-    futureRoute.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [SUVA.lat, SUVA.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
-
-
-    map.fitBounds(
-      L.latLngBounds([
-        [latestAIS.lat, latestAIS.lng],
-        [SUVA.lat, SUVA.lng],
-        [AUCKLAND.lat, AUCKLAND.lng]
-      ]),
-      {
-        padding: [45,45]
-      }
-    );
+    fitVoyage();
 
   }
 
-  catch (error) {
+
+  catch (
+    error
+  ) {
 
     console.error(
-      "AIS lookup failed:",
+      "AIS refresh failed:",
       error
     );
 
 
     headline.innerHTML =
-      `⚠️ <strong>Public AIS refresh failed.</strong>
-      Using fallback last AIS:
-      ${latestAIS.reported}
-      · ${latestAIS.lat.toFixed(5)}°,
-      ${latestAIS.lng.toFixed(5)}°
-      · orange boat = estimated current position`;
+
+      `🟡
+       <strong>Last verified Voyage Radar AIS:</strong>
+       ${latestAIS.reported}
+       · ${latestAIS.lat.toFixed(5)}°,
+       ${latestAIS.lng.toFixed(5)}°
+       · ${latestAIS.speed} kn
+       · course ${latestAIS.course}°
+       · automatic lookup unavailable
+       ·
+       <a
+       href="${VOYAGE_RADAR_URL}"
+       target="_blank"
+       rel="noopener">
+       check source
+       </a>`;
 
 
     updateSliderRange();
 
+
     goToday();
 
 
-    futureRoute.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [SUVA.lat, SUVA.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
+    fitVoyage();
 
-
-    map.fitBounds(
-      L.latLngBounds([
-        [latestAIS.lat, latestAIS.lng],
-        [SUVA.lat, SUVA.lng],
-        [AUCKLAND.lat, AUCKLAND.lng]
-      ]),
-      {
-        padding: [45,45]
-      }
-    );
   }
+
+
+  refreshButton.disabled =
+    false;
+
+
+  refreshButton.textContent =
+    "↻ Refresh AIS";
+
 }
 
 
-// --------------------------------------------------
-// MOBILE FIX
-// --------------------------------------------------
+/* ==================================================
+   FIT MAP
+================================================== */
+
+function fitVoyage() {
+
+  map.fitBounds(
+    L.latLngBounds(
+      [
+        [
+          latestAIS.lat,
+          latestAIS.lng
+        ],
+
+        [
+          SUVA.lat,
+          SUVA.lng
+        ],
+
+        [
+          AUCKLAND.lat,
+          AUCKLAND.lng
+        ]
+      ]
+    ),
+
+    {
+      padding:
+        [45,45]
+    }
+  );
+
+}
+
+
+/* ==================================================
+   PLAY ANIMATION
+================================================== */
+
+let timer =
+  null;
+
+
+function playVoyage() {
+
+  const button =
+    document.getElementById(
+      "playButton"
+    );
+
+
+  if (
+    timer
+  ) {
+
+    clearInterval(
+      timer
+    );
+
+
+    timer =
+      null;
+
+
+    button.textContent =
+      "▶ Play";
+
+
+    return;
+
+  }
+
+
+  slider.value =
+    0;
+
+
+  updateVoyage(
+    0
+  );
+
+
+  button.textContent =
+    "⏸ Pause";
+
+
+  timer =
+    setInterval(
+      () => {
+
+        let hours =
+          Number(
+            slider.value
+          )
+          +
+          3;
+
+
+        if (
+          hours >
+          Number(
+            slider.max
+          )
+        ) {
+
+          clearInterval(
+            timer
+          );
+
+
+          timer =
+            null;
+
+
+          button.textContent =
+            "▶ Play";
+
+
+          return;
+
+        }
+
+
+        slider.value =
+          hours;
+
+
+        updateVoyage(
+          hours
+        );
+
+      },
+
+      40
+    );
+
+}
+
+
+/* ==================================================
+   BUTTON EVENTS
+================================================== */
+
+document
+.getElementById(
+  "todayButton"
+)
+.addEventListener(
+  "click",
+  goToday
+);
+
+
+document
+.getElementById(
+  "plus7Button"
+)
+.addEventListener(
+  "click",
+  goPlus7
+);
+
+
+document
+.getElementById(
+  "refreshButton"
+)
+.addEventListener(
+  "click",
+  refreshAIS
+);
+
+
+document
+.getElementById(
+  "playButton"
+)
+.addEventListener(
+  "click",
+  playVoyage
+);
+
+
+slider
+.addEventListener(
+  "input",
+  () => {
+
+    updateVoyage(
+      Number(
+        slider.value
+      )
+    );
+
+  }
+);
+
+
+/* ==================================================
+   MOBILE RESIZE
+================================================== */
 
 function resizeMap() {
 
   setTimeout(
     () => {
+
       map.invalidateSize();
+
     },
+
     100
   );
+
 }
 
-window.addEventListener(
+
+window
+.addEventListener(
   "resize",
   resizeMap
 );
 
-window.addEventListener(
+
+window
+.addEventListener(
   "orientationchange",
   resizeMap
 );
 
 
-// --------------------------------------------------
-// START
-// --------------------------------------------------
+/* ==================================================
+   START
+================================================== */
 
 updateSliderRange();
 
-futureRoute.setLatLngs([
-  [latestAIS.lat, latestAIS.lng],
-  [SUVA.lat, SUVA.lng],
-  [AUCKLAND.lat, AUCKLAND.lng]
-]);
+
+futureRoute
+.setLatLngs(
+  [
+    [
+      latestAIS.lat,
+      latestAIS.lng
+    ],
+
+    [
+      SUVA.lat,
+      SUVA.lng
+    ],
+
+    [
+      AUCKLAND.lat,
+      AUCKLAND.lng
+    ]
+  ]
+);
+
 
 goToday();
+
+
+fitVoyage();
+
+
+/*
+  Try to obtain the latest Voyage Radar
+  observation immediately.
+*/
 
 refreshAIS();
 
 
-// Try for a newer public AIS fix every 10 minutes
+/*
+  Re-check every 10 minutes.
+
+  If Voyage Radar receives a newer
+  terrestrial AIS position near Fiji,
+  the yellow marker should update.
+*/
 
 setInterval(
   refreshAIS,
