@@ -38,6 +38,14 @@ body {
   color: white;
 }
 
+.tesla-icon img {
+  width: 52px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.7));
+}
+
+  
 #map {
   flex: 1 1 auto;
   min-height: 0;
@@ -332,6 +340,20 @@ const KOBE = {
   lat: 34.6901,
   lng: 135.1955
 };
+
+
+const shipIcon =
+  L.divIcon({
+    html: `
+      <div class="tesla-icon">
+        <img src="model3.png" alt="Tesla Model 3">
+      </div>
+    `,
+    className: "",
+    iconSize: [52, 28],
+    iconAnchor: [26, 14]
+  });
+  
   
 
 
