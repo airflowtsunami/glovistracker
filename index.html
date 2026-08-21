@@ -327,6 +327,14 @@ const AUCKLAND = {
 };
 
 
+const KOBE = {
+  name: "Kobe",
+  lat: 34.6901,
+  lng: 135.1955
+};
+  
+
+
 /* Built-in fallback AIS */
 
 let latestAIS = {
@@ -388,6 +396,7 @@ function addPortMarker(point) {
 addPortMarker(SUVA);
 addPortMarker(LAUTOKA);
 addPortMarker(AUCKLAND);
+addPortMarker(KOBE);
 
 
 /* AIS RANGE RINGS */
@@ -476,6 +485,26 @@ addAisRing(
   "",
   "Auckland · possible terrestrial AIS range ~80 nm"
 );
+
+
+/* Kobe */
+
+addAisRing(
+  KOBE,
+  40,
+  "#0f7a3d",
+  "",
+  "Kobe · likely terrestrial AIS range ~40 nm"
+);
+
+addAisRing(
+  KOBE,
+  80,
+  "#7edc9a",
+  "",
+  "Kobe · possible terrestrial AIS range ~80 nm"
+);
+  
 
 
 /* REAL AIS MARKER */
@@ -1357,6 +1386,7 @@ async function refreshAIS() {
 function fitMap() {
 
   const points = [
+    [KOBE.lat, KOBE.lng],
     [latestAIS.lat, latestAIS.lng],
     [SUVA.lat, SUVA.lng],
     [LAUTOKA.lat, LAUTOKA.lng],
