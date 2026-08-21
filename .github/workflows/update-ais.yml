@@ -3,7 +3,8 @@ name: Update GLOVIS CENTURY AIS
 on:
   schedule:
     # Run at 17 minutes past every hour.
-    - cron: "17 * * * *"
+    # - cron: "17 * * * *"
+  - cron: "*/30 * * * *"  
 
   # Allows you to press "Run workflow" manually.
   workflow_dispatch:
