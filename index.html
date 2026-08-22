@@ -305,7 +305,7 @@ button:hover {
   <div class="sliderLabels">
     <span>Last AIS</span>
     <span>22 Aug · Fiji</span>
-    <span>31 Aug · Auckland</span>
+    <span>28 Aug · Auckland</span>
   </div>
 
   <div class="buttonRow">
@@ -329,7 +329,9 @@ const SUVA = {
   name: "Suva",
   lat: -18.1416,
   lng: 178.4419,
-  time: new Date("2026-08-22T17:30:00+12:00")
+  // time: new Date("2026-08-22T17:30:00+12:00")
+  // ETA supplied by AIS is UTC
+  time: new Date("2026-08-22T17:30:00Z")
 };
 
 const LAUTOKA = {
@@ -342,7 +344,8 @@ const AUCKLAND = {
   name: "Auckland",
   lat: -36.8406,
   lng: 174.7850,
-  time: new Date("2026-08-31T00:00:00+12:00")
+  // time: new Date("2026-08-31T00:00:00+12:00")
+  time: new Date("2026-08-28T00:01:00+12:00")
 };
 
 
