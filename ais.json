@@ -2,15 +2,15 @@
   "vessel": "GLOVIS CENTURY",
   "imo": "9590589",
   "mmsi": "441200000",
-  "lat": 33.8624,
-  "lng": 134.99467,
-  "time": "2026-08-11T11:01:00Z",
-  "reported": "11 Aug 2026, 11:01 UTC",
-  "speed": 13.6,
+  "lat": -17.888347,
+  "lng": 176.770362,
+  "time": "2026-08-22T06:11:00Z",
+  "reported": "22 Aug 2026, 06:11 UTC",
+  "speed": 14.7,
   "course": null,
   "heading": null,
-  "waterBody": "Philippine Sea",
+  "waterBody": "South Pacific Ocean",
   "source": "Voyage Radar",
   "source_url": "https://aisvesseltracker.com/vessel/glovis-century-mmsi-441200000-imo-9590589",
-  "checked_at": "2026-08-22T05:59:50.215191Z"
+  "checked_at": "2026-08-22T06:49:55.314408Z"
 }
