@@ -167,6 +167,7 @@ button:hover {
   border-radius: 5px;
   padding: 3px 7px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .current-label {
@@ -176,6 +177,7 @@ button:hover {
   border-radius: 5px;
   padding: 3px 7px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .ais-pulse {
@@ -259,7 +261,6 @@ button:hover {
 
 <div class="header">
   <h2>🚢 GLOVIS CENTURY</h2>
-
   <div class="sub">
     IMO 9590589 · Tesla voyage tracker
   </div>
@@ -319,14 +320,18 @@ const SUVA = {
   name: "Suva",
   lat: -18.1416,
   lng: 178.4419,
+
+  // Actual arrival:
+  // 22 Aug 2026 19:55 UTC
   time: new Date("2026-08-22T19:55:00Z")
 };
 
 
 /*
-   Estimated departure:
-   Monday 24 Aug 2026 at 12:00 pm NZST
-   = Monday 24 Aug 2026 at 00:00 UTC
+   Monday 24 Aug 2026
+   12:00 pm NZST
+   =
+   00:00 UTC
 */
 
 const SUVA_DEPARTURE = {
@@ -348,6 +353,8 @@ const AUCKLAND = {
   name: "Auckland",
   lat: -36.8406,
   lng: 174.7850,
+
+  // 28 Aug 2026 00:01 NZST
   time: new Date("2026-08-28T00:01:00+12:00")
 };
 
@@ -520,6 +527,10 @@ addAisRing(
 
 /* =================================================
    REAL AIS MARKER
+
+   IMPORTANT:
+   Higher zIndex than estimated ship.
+   Label goes LEFT.
    ================================================= */
 
 const aisMarker =
@@ -527,7 +538,7 @@ const aisMarker =
     [latestAIS.lat, latestAIS.lng],
     {
       icon: aisIcon,
-      zIndexOffset: 3000
+      zIndexOffset: 5000
     }
   )
   .addTo(map)
@@ -535,8 +546,8 @@ const aisMarker =
     "Last real AIS",
     {
       permanent: true,
-      direction: "right",
-      offset: [12,0],
+      direction: "left",
+      offset: [-12,0],
       className: "ais-label"
     }
   );
@@ -544,6 +555,9 @@ const aisMarker =
 
 /* =================================================
    ESTIMATED BOAT
+
+   Lower zIndex than real AIS.
+   Label goes RIGHT.
    ================================================= */
 
 const ship =
@@ -551,7 +565,7 @@ const ship =
     [latestAIS.lat, latestAIS.lng],
     {
       icon: shipIcon,
-      zIndexOffset: 4000
+      zIndexOffset: 3000
     }
   )
   .addTo(map)
@@ -604,8 +618,12 @@ function interpolate(a, b, fraction) {
   const f =
     Math.max(
       0,
-      Math.min(1, fraction)
+      Math.min(
+        1,
+        fraction
+      )
     );
+
 
   return {
     lat:
@@ -641,6 +659,10 @@ function getEstimatedPosition(selectedTime) {
     latestAIS.time;
 
 
+  /*
+     AIS already at/after Auckland.
+  */
+
   if (
     aisTime >= AUCKLAND.time
   ) {
@@ -654,9 +676,12 @@ function getEstimatedPosition(selectedTime) {
 
 
   /*
-     Latest AIS is after Suva departure:
-     use the latest real AIS position as the new
-     starting point for the remaining estimate.
+     -----------------------------------------------
+     NEW AIS FIX AFTER SUVA DEPARTURE
+
+     Re-anchor projection automatically from the
+     latest REAL AIS position.
+     -----------------------------------------------
   */
 
   if (
@@ -711,7 +736,7 @@ function getEstimatedPosition(selectedTime) {
 
 
   /*
-     AIS says vessel has reached Suva.
+     Vessel has arrived at Suva.
   */
 
   if (
@@ -731,7 +756,7 @@ function getEstimatedPosition(selectedTime) {
 
 
     /*
-       Hold at Suva until departure.
+       Hold at Suva until estimated departure.
     */
 
     if (
@@ -747,8 +772,8 @@ function getEstimatedPosition(selectedTime) {
 
 
     /*
-       No newer AIS yet:
-       estimate from Suva to Auckland.
+       Departure has passed, but no newer AIS yet.
+       Estimate from Suva toward Auckland.
     */
 
     if (
@@ -829,6 +854,10 @@ function getEstimatedPosition(selectedTime) {
   }
 
 
+  /*
+     At Suva before departure.
+  */
+
   if (
     selectedTime <= SUVA_DEPARTURE.time
   ) {
@@ -840,6 +869,10 @@ function getEstimatedPosition(selectedTime) {
     };
   }
 
+
+  /*
+     Suva -> Auckland.
+  */
 
   if (
     selectedTime <= AUCKLAND.time
@@ -907,11 +940,9 @@ function updateSliderRange() {
 
 /* =================================================
    FORMATTERS
-   ================================================= */
 
-/*
-   All displayed times use NZ time.
-*/
+   All times displayed in NZ time.
+   ================================================= */
 
 const dateFormat =
   new Intl.DateTimeFormat(
@@ -1039,7 +1070,9 @@ function updateVoyage(hours) {
 
 
   const p =
-    getEstimatedPosition(selected);
+    getEstimatedPosition(
+      selected
+    );
 
 
   ship.setLatLng(
@@ -1050,7 +1083,9 @@ function updateVoyage(hours) {
   document
     .getElementById("dateDisplay")
     .textContent =
-      dateFormat.format(selected);
+      dateFormat.format(
+        selected
+      );
 
 
   let status;
@@ -1095,19 +1130,33 @@ function updateVoyage(hours) {
 
 
   const latitude =
-    Math.abs(p.lat).toFixed(2) +
+    Math.abs(
+      p.lat
+    ).toFixed(2) +
     "°" +
-    (p.lat < 0 ? "S" : "N");
+    (
+      p.lat < 0
+        ? "S"
+        : "N"
+    );
 
 
   const longitude =
-    Math.abs(p.lng).toFixed(2) +
+    Math.abs(
+      p.lng
+    ).toFixed(2) +
     "°" +
-    (p.lng < 0 ? "W" : "E");
+    (
+      p.lng < 0
+        ? "W"
+        : "E"
+    );
 
 
   const aisHint =
-    getAisRangeHint(p);
+    getAisRangeHint(
+      p
+    );
 
 
   document
@@ -1121,7 +1170,9 @@ function updateVoyage(hours) {
       aisHint;
 
 
-  updateRouteLines(p);
+  updateRouteLines(
+    p
+  );
 }
 
 
@@ -1130,6 +1181,7 @@ function updateVoyage(hours) {
    ================================================= */
 
 function updateRouteLines(p) {
+
 
   if (
     p.leg === "AT_SUVA"
@@ -1223,7 +1275,6 @@ function updateRouteLines(p) {
 
     futureRoute.setLatLngs([]);
 
-
     return;
   }
 
@@ -1268,9 +1319,13 @@ function goToday() {
     );
 
 
-  slider.value = hours;
+  slider.value =
+    hours;
 
-  updateVoyage(hours);
+
+  updateVoyage(
+    hours
+  );
 }
 
 
@@ -1306,9 +1361,13 @@ function goPlus7() {
     );
 
 
-  slider.value = hours;
+  slider.value =
+    hours;
 
-  updateVoyage(hours);
+
+  updateVoyage(
+    hours
+  );
 }
 
 
@@ -1354,8 +1413,12 @@ async function refreshAIS() {
 
 
     if (
-      !Number.isFinite(Number(ais.lat)) ||
-      !Number.isFinite(Number(ais.lng)) ||
+      !Number.isFinite(
+        Number(ais.lat)
+      ) ||
+      !Number.isFinite(
+        Number(ais.lng)
+      ) ||
       !ais.time
     ) {
 
@@ -1374,7 +1437,9 @@ async function refreshAIS() {
         Number(ais.lng),
 
       time:
-        new Date(ais.time),
+        new Date(
+          ais.time
+        ),
 
       reported:
         ais.reported ||
@@ -1384,19 +1449,25 @@ async function refreshAIS() {
         ais.speed === null ||
         ais.speed === undefined
           ? null
-          : Number(ais.speed),
+          : Number(
+              ais.speed
+            ),
 
       course:
         ais.course === null ||
         ais.course === undefined
           ? null
-          : Number(ais.course),
+          : Number(
+              ais.course
+            ),
 
       heading:
         ais.heading === null ||
         ais.heading === undefined
           ? null
-          : Number(ais.heading),
+          : Number(
+              ais.heading
+            ),
 
       waterBody:
         ais.waterBody ||
@@ -1413,6 +1484,10 @@ async function refreshAIS() {
     };
 
 
+    /*
+       Move real AIS marker.
+    */
+
     aisMarker.setLatLng([
       latestAIS.lat,
       latestAIS.lng
@@ -1420,26 +1495,32 @@ async function refreshAIS() {
 
 
     /*
-       IMPORTANT:
-       Display the UTC AIS timestamp in NZ local time.
+       Convert raw UTC timestamp to NZ time.
+    */
+
+    const aisNZTime =
+      dateFormat.format(
+        latestAIS.time
+      );
+
+
+    /*
+       REAL AIS label always includes time.
     */
 
     aisMarker.setTooltipContent(
       "Last real AIS · " +
-      dateFormat.format(
-        latestAIS.time
-      )
+      aisNZTime
     );
 
 
     /*
-       Same NZ-formatted timestamp in the blue
-       headline rather than raw ISO / Z format.
+       Blue headline.
     */
 
     let text =
-      `🟡 <strong>Latest AIS:</strong>
-       ${dateFormat.format(latestAIS.time)}
+      `🟡 <strong>Latest real AIS:</strong>
+       ${aisNZTime}
        · ${latestAIS.lat.toFixed(5)}°,
        ${latestAIS.lng.toFixed(5)}°`;
 
@@ -1526,13 +1607,21 @@ async function refreshAIS() {
     );
 
 
-    /*
-       Fallback also shown in NZ time.
-    */
+    const fallbackNZTime =
+      dateFormat.format(
+        latestAIS.time
+      );
+
+
+    aisMarker.setTooltipContent(
+      "Last real AIS · " +
+      fallbackNZTime
+    );
+
 
     let fallbackText =
       `🟡 <strong>Using built-in last AIS:</strong>
-       ${dateFormat.format(latestAIS.time)}
+       ${fallbackNZTime}
        · ${latestAIS.lat.toFixed(5)}°,
        ${latestAIS.lng.toFixed(5)}°`;
 
@@ -1569,7 +1658,9 @@ function fitMap() {
 
 
   map.fitBounds(
-    L.latLngBounds(points),
+    L.latLngBounds(
+      points
+    ),
     {
       padding: [45,45]
     }
@@ -1741,9 +1832,7 @@ function resizeMap() {
 
   setTimeout(
     () => {
-
       map.invalidateSize();
-
     },
     100
   );
