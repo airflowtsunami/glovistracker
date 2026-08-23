@@ -8,7 +8,7 @@
   content="width=device-width, initial-scale=1, viewport-fit=cover"
 >
 
-<title>GLOVIS CENTURY – Tesla Voyage Tracker</title>
+<title>MORNING CARA – Tesla Voyage Tracker</title>
 
 <link
   rel="stylesheet"
@@ -260,9 +260,9 @@ button:hover {
 <body>
 
 <div class="header">
-  <h2>🚢 GLOVIS CENTURY</h2>
+  <h2>🚢 MORNING CARA</h2>
   <div class="sub">
-    IMO 9590589 · Tesla voyage tracker
+    IMO 9574092 · Tesla voyage tracker
   </div>
 </div>
 
@@ -287,13 +287,13 @@ button:hover {
 
   <div class="sliderLabels">
     <span>Last AIS</span>
-    <span>Suva</span>
+    <span>Pacific</span>
     <span>28 Aug · Auckland</span>
   </div>
 
   <div class="buttonRow">
     <button id="todayButton">Today</button>
-    <button id="plus7Button">+7 days</button>
+    <button id="arrivalButton">Arrival</button>
     <button id="refreshButton">↻ Refresh</button>
     <button id="playButton">▶ Play</button>
   </div>
@@ -305,64 +305,46 @@ button:hover {
 <script>
 
 /* =================================================
-   SOURCE
+   VESSEL
    ================================================= */
 
+const VESSEL_NAME = "MORNING CARA";
+const IMO = "9574092";
+const MMSI = "441148000";
+
 const SOURCE_URL =
-  "https://www.vesselfinder.com/vessels/details/9590589";
+  "https://www.marineradar.com/vessel/mmsi-441148000/morning-cara";
 
 
 /* =================================================
-   PORTS
+   VOYAGE
    ================================================= */
 
-const SUVA = {
-  name: "Suva",
-  lat: -18.1416,
-  lng: 178.4419,
+/*
+   Shanghai departure:
+   15 Aug 2026 18:02 UTC
+*/
 
-  // Actual arrival:
-  // 22 Aug 2026 19:55 UTC
-  time: new Date("2026-08-22T19:55:00Z")
+const SHANGHAI = {
+  name: "Shanghai",
+  lat: 31.2304,
+  lng: 121.4737,
+  time: new Date("2026-08-15T18:02:00Z")
 };
 
 
 /*
-   Monday 24 Aug 2026
-   12:00 pm NZST
+   Auckland ETA:
+   27 Aug 2026 23:00 UTC
    =
-   00:00 UTC
+   28 Aug 2026 11:00 NZST
 */
-
-const SUVA_DEPARTURE = {
-  name: "Suva departure",
-  lat: -18.1416,
-  lng: 178.4419,
-  time: new Date("2026-08-24T00:00:00Z")
-};
-
-
-const LAUTOKA = {
-  name: "Lautoka",
-  lat: -17.6169,
-  lng: 177.4505
-};
-
 
 const AUCKLAND = {
   name: "Auckland",
   lat: -36.8406,
   lng: 174.7850,
-
-  // 28 Aug 2026 00:01 NZST
-  time: new Date("2026-08-28T00:01:00+12:00")
-};
-
-
-const KOBE = {
-  name: "Kobe",
-  lat: 34.6901,
-  lng: 135.1955
+  time: new Date("2026-08-27T23:00:00Z")
 };
 
 
@@ -390,18 +372,22 @@ const aisIcon =
 
 /* =================================================
    FALLBACK AIS
+
+   Last exact public terrestrial AIS fix:
+   17 Aug 2026 01:11 UTC
+   24.7002 N, 127.1542 E
    ================================================= */
 
 let latestAIS = {
-  lat: -18.1416,
-  lng: 178.4419,
-  time: new Date("2026-08-22T19:55:00Z"),
-  reported: "22 Aug 2026, 19:55 UTC",
-  speed: 0,
-  course: null,
-  heading: null,
-  waterBody: "Suva",
-  source: "AIS",
+  lat: 24.7002,
+  lng: 127.1542,
+  time: new Date("2026-08-17T01:11:00Z"),
+  reported: "17 Aug 2026 01:11 UTC",
+  speed: 17.6,
+  course: 142,
+  heading: 144,
+  waterBody: "East China Sea",
+  source: "MarineRadar",
   checkedAt: ""
 };
 
@@ -419,7 +405,7 @@ const map =
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
-    maxZoom: 15,
+    maxZoom: 18,
     attribution: "&copy; OpenStreetMap contributors"
   }
 ).addTo(map);
@@ -453,84 +439,41 @@ function addPortMarker(point) {
 }
 
 
-addPortMarker(SUVA);
-addPortMarker(LAUTOKA);
+addPortMarker(SHANGHAI);
 addPortMarker(AUCKLAND);
-addPortMarker(KOBE);
 
 
 /* =================================================
-   AIS RANGE RINGS
+   AUCKLAND AIS RANGE
    ================================================= */
 
 const NM_TO_METERS = 1852;
 
 
-function addAisRing(point, nm, color, dash, label) {
-
-  L.circle(
-    [point.lat, point.lng],
-    {
-      radius: nm * NM_TO_METERS,
-      color: color,
-      weight: 5,
-      opacity: 0.95,
-      fillColor: color,
-      fillOpacity: 0.03,
-      dashArray: dash
-    }
-  )
-  .addTo(map)
-  .bindTooltip(
-    label,
-    {
-      permanent: false,
-      direction: "center",
-      className: "port-label"
-    }
-  );
-}
-
-
-addAisRing(
-  SUVA,
-  40,
-  "#0f7a3d",
-  "",
-  "Suva · likely terrestrial AIS range ~40 nm"
-);
-
-addAisRing(
-  LAUTOKA,
-  40,
-  "#0f7a3d",
-  "",
-  "Lautoka · likely terrestrial AIS range ~40 nm"
-);
-
-addAisRing(
-  AUCKLAND,
-  40,
-  "#0f7a3d",
-  "",
-  "Auckland · likely terrestrial AIS range ~40 nm"
-);
-
-addAisRing(
-  KOBE,
-  40,
-  "#0f7a3d",
-  "",
-  "Kobe · likely terrestrial AIS range ~40 nm"
+L.circle(
+  [AUCKLAND.lat, AUCKLAND.lng],
+  {
+    radius: 40 * NM_TO_METERS,
+    color: "#0f7a3d",
+    weight: 5,
+    opacity: .95,
+    fillColor: "#0f7a3d",
+    fillOpacity: .03
+  }
+)
+.addTo(map)
+.bindTooltip(
+  "Auckland · likely terrestrial AIS range ~40 nm",
+  {
+    permanent: false,
+    direction: "center",
+    className: "port-label"
+  }
 );
 
 
 /* =================================================
    REAL AIS MARKER
-
-   IMPORTANT:
-   Higher zIndex than estimated ship.
-   Label goes LEFT.
    ================================================= */
 
 const aisMarker =
@@ -554,10 +497,7 @@ const aisMarker =
 
 
 /* =================================================
-   ESTIMATED BOAT
-
-   Lower zIndex than real AIS.
-   Label goes RIGHT.
+   ESTIMATED POSITION
    ================================================= */
 
 const ship =
@@ -618,12 +558,8 @@ function interpolate(a, b, fraction) {
   const f =
     Math.max(
       0,
-      Math.min(
-        1,
-        fraction
-      )
+      Math.min(1, fraction)
     );
-
 
   return {
     lat:
@@ -650,173 +586,19 @@ function distanceNm(lat1, lng1, lat2, lng2) {
 
 
 /* =================================================
-   ESTIMATED POSITION
+   POSITION ESTIMATE
+
+   Always projects from the newest real AIS point
+   to Auckland.
+
+   Every time ais.json updates, this automatically
+   re-anchors the trajectory.
    ================================================= */
 
 function getEstimatedPosition(selectedTime) {
 
-  const aisTime =
-    latestAIS.time;
-
-
-  /*
-     AIS already at/after Auckland.
-  */
-
   if (
-    aisTime >= AUCKLAND.time
-  ) {
-
-    return {
-      lat: latestAIS.lat,
-      lng: latestAIS.lng,
-      leg: "LATEST_AIS"
-    };
-  }
-
-
-  /*
-     -----------------------------------------------
-     NEW AIS FIX AFTER SUVA DEPARTURE
-
-     Re-anchor projection automatically from the
-     latest REAL AIS position.
-     -----------------------------------------------
-  */
-
-  if (
-    aisTime > SUVA_DEPARTURE.time
-  ) {
-
-    if (
-      selectedTime <= aisTime
-    ) {
-
-      return {
-        lat: latestAIS.lat,
-        lng: latestAIS.lng,
-        leg: "AIS"
-      };
-    }
-
-
-    if (
-      selectedTime <= AUCKLAND.time
-    ) {
-
-      const fraction =
-        (
-          selectedTime -
-          aisTime
-        )
-        /
-        (
-          AUCKLAND.time -
-          aisTime
-        );
-
-
-      return {
-        ...interpolate(
-          latestAIS,
-          AUCKLAND,
-          fraction
-        ),
-        leg: "AIS_TO_AUCKLAND"
-      };
-    }
-
-
-    return {
-      lat: AUCKLAND.lat,
-      lng: AUCKLAND.lng,
-      leg: "AUCKLAND"
-    };
-  }
-
-
-  /*
-     Vessel has arrived at Suva.
-  */
-
-  if (
-    aisTime >= SUVA.time
-  ) {
-
-    if (
-      selectedTime <= aisTime
-    ) {
-
-      return {
-        lat: latestAIS.lat,
-        lng: latestAIS.lng,
-        leg: "AIS"
-      };
-    }
-
-
-    /*
-       Hold at Suva until estimated departure.
-    */
-
-    if (
-      selectedTime <= SUVA_DEPARTURE.time
-    ) {
-
-      return {
-        lat: latestAIS.lat,
-        lng: latestAIS.lng,
-        leg: "AT_SUVA"
-      };
-    }
-
-
-    /*
-       Departure has passed, but no newer AIS yet.
-       Estimate from Suva toward Auckland.
-    */
-
-    if (
-      selectedTime <= AUCKLAND.time
-    ) {
-
-      const fraction =
-        (
-          selectedTime -
-          SUVA_DEPARTURE.time
-        )
-        /
-        (
-          AUCKLAND.time -
-          SUVA_DEPARTURE.time
-        );
-
-
-      return {
-        ...interpolate(
-          SUVA,
-          AUCKLAND,
-          fraction
-        ),
-        leg: "SUVA_TO_AUCKLAND"
-      };
-    }
-
-
-    return {
-      lat: AUCKLAND.lat,
-      lng: AUCKLAND.lng,
-      leg: "AUCKLAND"
-    };
-  }
-
-
-  /*
-     Before Suva.
-  */
-
-  if (
-    selectedTime <= aisTime
+    selectedTime <= latestAIS.time
   ) {
 
     return {
@@ -828,83 +610,38 @@ function getEstimatedPosition(selectedTime) {
 
 
   if (
-    selectedTime <= SUVA.time
+    selectedTime >= AUCKLAND.time
   ) {
 
-    const fraction =
-      (
-        selectedTime -
-        aisTime
-      )
-      /
-      (
-        SUVA.time -
-        aisTime
-      );
-
-
     return {
-      ...interpolate(
-        latestAIS,
-        SUVA,
-        fraction
-      ),
-      leg: "AIS_TO_SUVA"
+      lat: AUCKLAND.lat,
+      lng: AUCKLAND.lng,
+      leg: "AUCKLAND"
     };
   }
 
 
-  /*
-     At Suva before departure.
-  */
-
-  if (
-    selectedTime <= SUVA_DEPARTURE.time
-  ) {
-
-    return {
-      lat: SUVA.lat,
-      lng: SUVA.lng,
-      leg: "AT_SUVA"
-    };
-  }
-
-
-  /*
-     Suva -> Auckland.
-  */
-
-  if (
-    selectedTime <= AUCKLAND.time
-  ) {
-
-    const fraction =
-      (
-        selectedTime -
-        SUVA_DEPARTURE.time
-      )
-      /
-      (
-        AUCKLAND.time -
-        SUVA_DEPARTURE.time
-      );
-
-
-    return {
-      ...interpolate(
-        SUVA,
-        AUCKLAND,
-        fraction
-      ),
-      leg: "SUVA_TO_AUCKLAND"
-    };
-  }
+  const fraction =
+    (
+      selectedTime -
+      latestAIS.time
+    )
+    /
+    (
+      AUCKLAND.time -
+      latestAIS.time
+    );
 
 
   return {
-    lat: AUCKLAND.lat,
-    lng: AUCKLAND.lng,
-    leg: "AUCKLAND"
+    ...interpolate(
+      latestAIS,
+      AUCKLAND,
+      fraction
+    ),
+
+    leg:
+      "AIS_TO_AUCKLAND"
   };
 }
 
@@ -922,7 +659,7 @@ function updateSliderRange() {
   const totalHours =
     Math.max(
       1,
-      Math.round(
+      Math.ceil(
         (
           AUCKLAND.time -
           latestAIS.time
@@ -939,9 +676,7 @@ function updateSliderRange() {
 
 
 /* =================================================
-   FORMATTERS
-
-   All times displayed in NZ time.
+   NZ TIME FORMAT
    ================================================= */
 
 const dateFormat =
@@ -973,85 +708,44 @@ const checkedFormat =
 
 
 /* =================================================
-   AIS RANGE MESSAGE
+   STATUS
    ================================================= */
 
 function getAisRangeHint(p) {
 
-  const locations = [
-    {
-      point: SUVA,
-      name: "Suva"
-    },
-    {
-      point: LAUTOKA,
-      name: "Lautoka"
-    },
-    {
-      point: AUCKLAND,
-      name: "Auckland"
-    }
-  ];
-
-
-  let nearest = null;
-
-
-  locations.forEach(item => {
-
-    const distance =
-      distanceNm(
-        p.lat,
-        p.lng,
-        item.point.lat,
-        item.point.lng
-      );
-
-
-    if (
-      !nearest ||
-      distance < nearest.distance
-    ) {
-
-      nearest = {
-        name: item.name,
-        distance: distance
-      };
-    }
-
-  });
-
-
-  if (!nearest) {
-    return "";
-  }
+  const distance =
+    distanceNm(
+      p.lat,
+      p.lng,
+      AUCKLAND.lat,
+      AUCKLAND.lng
+    );
 
 
   if (
-    nearest.distance <= 40
+    distance <= 40
   ) {
 
     return (
-      ` · 📡 likely within ${nearest.name} terrestrial AIS range ` +
-      `(${nearest.distance.toFixed(0)} nm)`
+      ` · 📡 likely within Auckland terrestrial AIS range ` +
+      `(${distance.toFixed(0)} nm)`
     );
   }
 
 
   if (
-    nearest.distance <= 80
+    distance <= 80
   ) {
 
     return (
-      ` · 📡 approaching possible ${nearest.name} AIS range ` +
-      `(${nearest.distance.toFixed(0)} nm)`
+      ` · 📡 approaching Auckland AIS range ` +
+      `(${distance.toFixed(0)} nm)`
     );
   }
 
 
   return (
-    ` · nearest AIS area: ${nearest.name} ` +
-    `${nearest.distance.toFixed(0)} nm`
+    ` · Auckland ${distance.toFixed(0)} nm`
   );
 }
 
@@ -1070,9 +764,7 @@ function updateVoyage(hours) {
 
 
   const p =
-    getEstimatedPosition(
-      selected
-    );
+    getEstimatedPosition(selected);
 
 
   ship.setLatLng(
@@ -1083,9 +775,7 @@ function updateVoyage(hours) {
   document
     .getElementById("dateDisplay")
     .textContent =
-      dateFormat.format(
-        selected
-      );
+      dateFormat.format(selected);
 
 
   let status;
@@ -1094,69 +784,38 @@ function updateVoyage(hours) {
   switch (p.leg) {
 
     case "AIS":
+
       status =
         "Last real AIS position";
+
       break;
 
-    case "AIS_TO_SUVA":
-      status =
-        "Estimated · latest AIS → Suva";
-      break;
-
-    case "AT_SUVA":
-      status =
-        "⚓ Moored at Suva";
-      break;
-
-    case "SUVA_TO_AUCKLAND":
-      status =
-        "Estimated · Suva → Auckland";
-      break;
 
     case "AIS_TO_AUCKLAND":
+
       status =
         "Estimated · latest AIS → Auckland";
+
       break;
 
-    case "LATEST_AIS":
-      status =
-        "Latest real AIS position";
-      break;
 
     default:
+
       status =
         "📍 Auckland";
   }
 
 
   const latitude =
-    Math.abs(
-      p.lat
-    ).toFixed(2) +
+    Math.abs(p.lat).toFixed(2) +
     "°" +
-    (
-      p.lat < 0
-        ? "S"
-        : "N"
-    );
+    (p.lat < 0 ? "S" : "N");
 
 
   const longitude =
-    Math.abs(
-      p.lng
-    ).toFixed(2) +
+    Math.abs(p.lng).toFixed(2) +
     "°" +
-    (
-      p.lng < 0
-        ? "W"
-        : "E"
-    );
-
-
-  const aisHint =
-    getAisRangeHint(
-      p
-    );
+    (p.lng < 0 ? "W" : "E");
 
 
   document
@@ -1167,12 +826,10 @@ function updateVoyage(hours) {
       latitude +
       ", " +
       longitude +
-      aisHint;
+      getAisRangeHint(p);
 
 
-  updateRouteLines(
-    p
-  );
+  updateRouteLines(p);
 }
 
 
@@ -1181,27 +838,6 @@ function updateVoyage(hours) {
    ================================================= */
 
 function updateRouteLines(p) {
-
-
-  if (
-    p.leg === "AT_SUVA"
-  ) {
-
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng]
-    ]);
-
-
-    futureRoute.setLatLngs([
-      // [SUVA.lat, SUVA.lng],
-      [latestAIS.lat, latestAIS.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
-
-
-    return;
-  }
-
 
   if (
     p.leg === "AIS_TO_AUCKLAND"
@@ -1215,47 +851,6 @@ function updateRouteLines(p) {
 
     futureRoute.setLatLngs([
       [p.lat, p.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
-
-
-    return;
-  }
-
-
-  if (
-    p.leg === "SUVA_TO_AUCKLAND"
-  ) {
-
-    travelledLine.setLatLngs([
-      [SUVA.lat, SUVA.lng],
-      [p.lat, p.lng]
-    ]);
-
-
-    futureRoute.setLatLngs([
-      [p.lat, p.lng],
-      [AUCKLAND.lat, AUCKLAND.lng]
-    ]);
-
-
-    return;
-  }
-
-
-  if (
-    p.leg === "AIS_TO_SUVA"
-  ) {
-
-    travelledLine.setLatLngs([
-      [latestAIS.lat, latestAIS.lng],
-      [p.lat, p.lng]
-    ]);
-
-
-    futureRoute.setLatLngs([
-      [p.lat, p.lng],
-      [SUVA.lat, SUVA.lng],
       [AUCKLAND.lat, AUCKLAND.lng]
     ]);
 
@@ -1287,7 +882,6 @@ function updateRouteLines(p) {
 
   futureRoute.setLatLngs([
     [latestAIS.lat, latestAIS.lng],
-    [SUVA.lat, SUVA.lng],
     [AUCKLAND.lat, AUCKLAND.lng]
   ]);
 }
@@ -1320,54 +914,23 @@ function goToday() {
     );
 
 
-  slider.value =
-    hours;
+  slider.value = hours;
 
-
-  updateVoyage(
-    hours
-  );
+  updateVoyage(hours);
 }
 
 
 /* =================================================
-   +7 DAYS
+   ARRIVAL
    ================================================= */
 
-function goPlus7() {
-
-  const target =
-    Date.now() +
-    7 * 24 * 3600000;
-
-
-  let hours =
-    Math.round(
-      (
-        target -
-        latestAIS.time.getTime()
-      )
-      /
-      3600000
-    );
-
-
-  hours =
-    Math.max(
-      0,
-      Math.min(
-        Number(slider.max),
-        hours
-      )
-    );
-
+function goArrival() {
 
   slider.value =
-    hours;
-
+    slider.max;
 
   updateVoyage(
-    hours
+    Number(slider.max)
   );
 }
 
@@ -1385,15 +948,14 @@ async function refreshAIS() {
 
 
   headline.innerHTML =
-    "🟡 <strong>Checking latest saved AIS…</strong>";
+    "🟡 <strong>Checking latest saved MORNING CARA AIS…</strong>";
 
 
   try {
 
     const response =
       await fetch(
-        "ais.json?t=" +
-        Date.now(),
+        "ais.json?t=" + Date.now(),
         {
           cache: "no-store"
         }
@@ -1413,13 +975,40 @@ async function refreshAIS() {
       await response.json();
 
 
+    /*
+       Safety check.
+
+       Do NOT accidentally display GLOVIS CENTURY
+       data in the MORNING CARA tracker.
+    */
+
     if (
-      !Number.isFinite(
-        Number(ais.lat)
-      ) ||
-      !Number.isFinite(
-        Number(ais.lng)
-      ) ||
+      ais.imo &&
+      String(ais.imo) !== IMO
+    ) {
+
+      throw new Error(
+        "ais.json contains the wrong vessel: IMO " +
+        ais.imo
+      );
+    }
+
+
+    if (
+      ais.mmsi &&
+      String(ais.mmsi) !== MMSI
+    ) {
+
+      throw new Error(
+        "ais.json contains the wrong MMSI: " +
+        ais.mmsi
+      );
+    }
+
+
+    if (
+      !Number.isFinite(Number(ais.lat)) ||
+      !Number.isFinite(Number(ais.lng)) ||
       !ais.time
     ) {
 
@@ -1438,9 +1027,7 @@ async function refreshAIS() {
         Number(ais.lng),
 
       time:
-        new Date(
-          ais.time
-        ),
+        new Date(ais.time),
 
       reported:
         ais.reported ||
@@ -1450,29 +1037,22 @@ async function refreshAIS() {
         ais.speed === null ||
         ais.speed === undefined
           ? null
-          : Number(
-              ais.speed
-            ),
+          : Number(ais.speed),
 
       course:
         ais.course === null ||
         ais.course === undefined
           ? null
-          : Number(
-              ais.course
-            ),
+          : Number(ais.course),
 
       heading:
         ais.heading === null ||
         ais.heading === undefined
           ? null
-          : Number(
-              ais.heading
-            ),
+          : Number(ais.heading),
 
       waterBody:
         ais.waterBody ||
-        ais.port ||
         "",
 
       source:
@@ -1485,19 +1065,11 @@ async function refreshAIS() {
     };
 
 
-    /*
-       Move real AIS marker.
-    */
-
     aisMarker.setLatLng([
       latestAIS.lat,
       latestAIS.lng
     ]);
 
-
-    /*
-       Convert raw UTC timestamp to NZ time.
-    */
 
     const aisNZTime =
       dateFormat.format(
@@ -1505,19 +1077,11 @@ async function refreshAIS() {
       );
 
 
-    /*
-       REAL AIS label always includes time.
-    */
-
     aisMarker.setTooltipContent(
       "Last real AIS · " +
       aisNZTime
     );
 
-
-    /*
-       Blue headline.
-    */
 
     let text =
       `🟡 <strong>Latest real AIS:</strong>
@@ -1603,7 +1167,7 @@ async function refreshAIS() {
   catch (error) {
 
     console.warn(
-      "Could not load ais.json:",
+      "Could not load MORNING CARA ais.json:",
       error
     );
 
@@ -1620,19 +1184,13 @@ async function refreshAIS() {
     );
 
 
-    let fallbackText =
-      `🟡 <strong>Using built-in last AIS:</strong>
+    headline.innerHTML =
+      `🟡 <strong>Using last known MORNING CARA AIS:</strong>
        ${fallbackNZTime}
        · ${latestAIS.lat.toFixed(5)}°,
-       ${latestAIS.lng.toFixed(5)}°`;
-
-
-    fallbackText +=
-      ` · run the GitHub Action to create/update ais.json`;
-
-
-    headline.innerHTML =
-      fallbackText;
+       ${latestAIS.lng.toFixed(5)}°
+       · ${latestAIS.speed} kn
+       · awaiting newer AIS`;
 
 
     updateSliderRange();
@@ -1652,16 +1210,12 @@ function fitMap() {
 
   const points = [
     [latestAIS.lat, latestAIS.lng],
-    [SUVA.lat, SUVA.lng],
-    [LAUTOKA.lat, LAUTOKA.lng],
     [AUCKLAND.lat, AUCKLAND.lng]
   ];
 
 
   map.fitBounds(
-    L.latLngBounds(
-      points
-    ),
+    L.latLngBounds(points),
     {
       padding: [45,45]
     }
@@ -1673,8 +1227,7 @@ function fitMap() {
    PLAY
    ================================================= */
 
-let timer =
-  null;
+let timer = null;
 
 
 function playVoyage() {
@@ -1687,31 +1240,20 @@ function playVoyage() {
 
   if (timer) {
 
-    clearInterval(
-      timer
-    );
+    clearInterval(timer);
 
-
-    timer =
-      null;
-
+    timer = null;
 
     button.textContent =
       "▶ Play";
-
 
     return;
   }
 
 
-  slider.value =
-    0;
+  slider.value = 0;
 
-
-  updateVoyage(
-    0
-  );
-
+  updateVoyage(0);
 
   button.textContent =
     "⏸ Pause";
@@ -1722,44 +1264,28 @@ function playVoyage() {
       () => {
 
         let hours =
-          Number(
-            slider.value
-          )
-          +
-          3;
+          Number(slider.value) + 3;
 
 
         if (
           hours >
-          Number(
-            slider.max
-          )
+          Number(slider.max)
         ) {
 
-          clearInterval(
-            timer
-          );
+          clearInterval(timer);
 
-
-          timer =
-            null;
-
+          timer = null;
 
           button.textContent =
             "▶ Play";
-
 
           return;
         }
 
 
-        slider.value =
-          hours;
+        slider.value = hours;
 
-
-        updateVoyage(
-          hours
-        );
+        updateVoyage(hours);
 
       },
       40
@@ -1772,9 +1298,7 @@ function playVoyage() {
    ================================================= */
 
 document
-  .getElementById(
-    "todayButton"
-  )
+  .getElementById("todayButton")
   .addEventListener(
     "click",
     goToday
@@ -1782,19 +1306,15 @@ document
 
 
 document
-  .getElementById(
-    "plus7Button"
-  )
+  .getElementById("arrivalButton")
   .addEventListener(
     "click",
-    goPlus7
+    goArrival
   );
 
 
 document
-  .getElementById(
-    "refreshButton"
-  )
+  .getElementById("refreshButton")
   .addEventListener(
     "click",
     refreshAIS
@@ -1802,9 +1322,7 @@ document
 
 
 document
-  .getElementById(
-    "playButton"
-  )
+  .getElementById("playButton")
   .addEventListener(
     "click",
     playVoyage
@@ -1816,9 +1334,7 @@ slider.addEventListener(
   () => {
 
     updateVoyage(
-      Number(
-        slider.value
-      )
+      Number(slider.value)
     );
 
   }
@@ -1866,7 +1382,7 @@ refreshAIS();
 
 
 /*
-   Reload ais.json every five minutes.
+   Reload local ais.json every five minutes.
 */
 
 setInterval(
