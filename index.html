@@ -1481,13 +1481,13 @@ async function refreshAIS() {
 
     aisMarker.setTooltipContent(
       "Last real AIS · " +
-      latestAIS.reported
+      dateFormat.format(latestAIS.reported)
     );
 
 
     let text =
       `🟡 <strong>Latest AIS:</strong>
-       ${latestAIS.reported}
+       ${dateFormat.format(latestAIS.time)}
        · ${latestAIS.lat.toFixed(5)}°,
        ${latestAIS.lng.toFixed(5)}°`;
 
