@@ -1,707 +1,343 @@
 import json
 import re
-import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
 
 
-IMO = "9590589"
-MMSI = "441200000"
-VESSEL = "GLOVIS CENTURY"
+VESSEL = "MORNING CARA"
+IMO = "9574092"
+MMSI = "441148000"
 
-VESSELFINDER_URL = (
-    "https://www.vesselfinder.com/vessels/details/9590589"
+SOURCE_URL = (
+    "https://www.marineradar.com/vessel/"
+    "mmsi-441148000/morning-cara"
 )
 
-VOYAGE_RADAR_URL = (
-    "https://aisvesseltracker.com/vessel/"
-    "glovis-century-mmsi-441200000-imo-9590589"
-)
-
-OUTPUT = Path("ais.json")
+OUTPUT_FILE = Path("ais.json")
 
 
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) "
-        "AppleWebKit/537.36 "
-        "(KHTML, like Gecko) "
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/131.0 Safari/537.36"
     ),
-    "Accept": (
-        "text/html,application/xhtml+xml,"
-        "application/xml;q=0.9,*/*;q=0.8"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Language": "en-NZ,en;q=0.9",
 }
 
 
-# --------------------------------------------------
-# Known port coordinates
-#
-# These are used only when VesselFinder says the ship
-# has actually arrived/moored at the named port.
-# --------------------------------------------------
-
-KNOWN_PORTS = {
-    "suva": {
-        "lat": -18.1416,
-        "lng": 178.4419,
-    },
-    "auckland": {
-        "lat": -36.8406,
-        "lng": 174.7850,
-    },
-}
+def utc_now_iso():
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def find(pattern, text, flags=re.I | re.S):
-    match = re.search(pattern, text, flags)
-
-    if not match:
+def parse_float(value):
+    if value is None:
         return None
 
-    return match.group(1).strip()
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
-def fetch(url):
-    print("Fetching:", url)
+def load_existing():
+    if not OUTPUT_FILE.exists():
+        return None
 
-    response = requests.get(
-        url,
-        headers=HEADERS,
-        timeout=30,
-    )
+    try:
+        with OUTPUT_FILE.open("r", encoding="utf-8") as f:
+            data = json.load(f)
 
-    print("HTTP status:", response.status_code)
+        # Do not reuse old GLOVIS CENTURY data.
+        if str(data.get("imo", "")) != IMO:
+            return None
 
-    response.raise_for_status()
+        return data
 
-    if len(response.text) < 500:
-        raise RuntimeError(
-            f"Response unexpectedly small from {url}"
-        )
+    except Exception:
+        return None
 
-    return response.text
 
-
-def strip_html(html):
-    text = re.sub(
-        r"<script.*?</script>",
-        " ",
-        html,
-        flags=re.I | re.S,
-    )
-
-    text = re.sub(
-        r"<style.*?</style>",
-        " ",
-        text,
-        flags=re.I | re.S,
-    )
-
-    text = re.sub(
-        r"<[^>]+>",
-        " ",
-        text,
-    )
-
-    text = (
-        text.replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-    )
-
-    return re.sub(
-        r"\s+",
-        " ",
-        text,
-    ).strip()
-
-
-# --------------------------------------------------
-# VesselFinder
-# --------------------------------------------------
-
-def parse_vesselfinder(html):
-
-    plain = strip_html(html)
-
-    result = {
-        "source": "VesselFinder",
-        "source_url": VESSELFINDER_URL,
-        "navigation_status": None,
-        "port": None,
-        "arrival_time": None,
-        "position_age_text": None,
-        "lat": None,
-        "lng": None,
-    }
-
-
-    # ----------------------------------------------
-    # Navigation status
-    # Example:
-    # Navigation Status Moored
-    # ----------------------------------------------
-
-    nav = find(
-        r"Navigation Status\s+"
-        r"([A-Za-z ]+?)\s+"
-        r"(?:Position received|IMO|AIS Type)",
-        plain,
-    )
-
-    if nav:
-        result["navigation_status"] = nav.strip()
-
-
-    # ----------------------------------------------
-    # Position age
-    #
-    # Example:
-    # Position received 2 hours ago
-    # ----------------------------------------------
-
-    age = find(
-        r"Position received\s+"
-        r"(.+?)\s+"
-        r"(?:IMO\s*/\s*MMSI|IMO)",
-        plain,
-    )
-
-    if age:
-        result["position_age_text"] = age.strip()
-
-
-    # ----------------------------------------------
-    # Arrived port
-    #
-    # Example:
-    # arrived at the port of Suva, Fiji
-    # ----------------------------------------------
-
-    port = find(
-        r"arrived at the port of\s+"
-        r"([A-Za-z .'-]+?)(?:,\s*[A-Za-z ]+)?\s+on\s+",
-        plain,
-    )
-
-    if port:
-        result["port"] = port.strip()
-
-
-    # ----------------------------------------------
-    # Actual arrival time
-    #
-    # Example:
-    # ATA: Aug 22, 19:55 UTC
-    # ----------------------------------------------
-
-    ata = find(
-        r"ATA:\s*"
-        r"([A-Za-z]{3}\s+"
-        r"\d{1,2},\s+"
-        r"\d{1,2}:\d{2}\s+UTC)",
-        plain,
-    )
-
-    if ata:
-
-        year = datetime.now(timezone.utc).year
-
-        dt = datetime.strptime(
-            f"{ata} {year}",
-            "%b %d, %H:%M UTC %Y",
-        ).replace(
-            tzinfo=timezone.utc
-        )
-
-        result["arrival_time"] = (
-            dt.isoformat()
-            .replace("+00:00", "Z")
-        )
-
-
-    # ----------------------------------------------
-    # Attempt to find embedded coordinates
-    #
-    # VesselFinder sometimes changes its HTML, so we
-    # try several common JSON/JS forms.
-    # ----------------------------------------------
-
-    lat_patterns = [
-        r'"lat"\s*:\s*(-?\d{1,2}\.\d+)',
-        r'"latitude"\s*:\s*(-?\d{1,2}\.\d+)',
-        r'\blat\s*[:=]\s*(-?\d{1,2}\.\d+)',
-    ]
-
-    lng_patterns = [
-        r'"lon"\s*:\s*(-?\d{1,3}\.\d+)',
-        r'"lng"\s*:\s*(-?\d{1,3}\.\d+)',
-        r'"longitude"\s*:\s*(-?\d{1,3}\.\d+)',
-        r'\b(?:lon|lng)\s*[:=]\s*(-?\d{1,3}\.\d+)',
-    ]
-
-    for pattern in lat_patterns:
-        value = find(pattern, html)
-        if value is not None:
-            result["lat"] = float(value)
-            break
-
-    for pattern in lng_patterns:
-        value = find(pattern, html)
-        if value is not None:
-            result["lng"] = float(value)
-            break
-
-
-    return result
-
-
-# --------------------------------------------------
-# Voyage Radar fallback
-# --------------------------------------------------
-
-def parse_voyage_radar(html):
-
-    plain = strip_html(html)
-
-    lat = find(
-        r"Latitude\s+"
-        r"([+-]?\d{1,2}\.\d+)",
-        plain,
-    )
-
-    lng = find(
-        r"Longitude\s+"
-        r"([+-]?\d{1,3}\.\d+)",
-        plain,
-    )
-
-
-    if not lat or not lng:
-
-        position = re.search(
-            r"position\s+"
-            r"([0-9.]+)°([NS]),\s*"
-            r"([0-9.]+)°([EW])",
-            plain,
-            re.I,
-        )
-
-        if position:
-
-            raw_lat = float(
-                position.group(1)
-            )
-
-            raw_lng = float(
-                position.group(3)
-            )
-
-            lat = (
-                -raw_lat
-                if position.group(2).upper() == "S"
-                else raw_lat
-            )
-
-            lng = (
-                -raw_lng
-                if position.group(4).upper() == "W"
-                else raw_lng
-            )
-
-
-    if lat is None or lng is None:
-        raise RuntimeError(
-            "Could not extract coordinates "
-            "from Voyage Radar"
-        )
-
-
-    lat = float(lat)
-    lng = float(lng)
-
-
-    speed = find(
-        r"Speed\s+"
-        r"([0-9.]+)\s*kn",
-        plain,
-    )
-
-    if speed is None:
-        speed = find(
-            r"moving at\s+"
-            r"([0-9.]+)\s+knots",
-            plain,
-        )
-
-    speed = (
-        float(speed)
-        if speed is not None
-        else None
-    )
-
-
-    course = find(
-        r"Course Over Ground\s*"
-        r"\(COG\)\s*"
-        r"([0-9.]+)°",
-        plain,
-    )
-
-    course = (
-        float(course)
-        if course is not None
-        else None
-    )
-
-
-    heading = find(
-        r"True Heading\s+"
-        r"([0-9.]+)°",
-        plain,
-    )
-
-    heading = (
-        float(heading)
-        if heading is not None
-        else None
-    )
-
-
-    water_body = find(
-        r"Water Body\s+"
-        r"(.+?)\s+"
-        r"Last Update",
-        plain,
-    )
-
-
-    reported = find(
-        r"Last Update\s*"
-        r"\(UTC\)\s*"
-        r"(\d{1,2}\s+"
-        r"[A-Za-z]{3}\s+"
-        r"\d{4},?\s+"
-        r"\d{1,2}:\d{2}\s+UTC)",
-        plain,
-    )
-
-
-    if not reported:
-
-        reported = find(
-            r"Position last updated\s+"
-            r"(\d{1,2}\s+"
-            r"[A-Za-z]{3}\s+"
-            r"\d{4},?\s+"
-            r"\d{1,2}:\d{2}\s+UTC)",
-            plain,
-        )
-
-
-    if not reported:
-        raise RuntimeError(
-            "Could not extract Voyage Radar timestamp"
-        )
-
-
-    reported_clean = (
-        reported
-        .replace(",", "")
-        .strip()
-    )
-
-
-    reported_dt = datetime.strptime(
-        reported_clean,
-        "%d %b %Y %H:%M UTC",
-    ).replace(
-        tzinfo=timezone.utc
-    )
-
-
-    return {
-        "lat": lat,
-        "lng": lng,
-        "time": (
-            reported_dt.isoformat()
-            .replace("+00:00", "Z")
-        ),
-        "reported": reported,
-        "speed": speed,
-        "course": course,
-        "heading": heading,
-        "waterBody": water_body,
-    }
-
-
-def parse_iso(value):
-
+def parse_iso_utc(value):
     if not value:
         return None
 
     try:
         return datetime.fromisoformat(
-            value.replace(
-                "Z",
-                "+00:00",
-            )
+            value.replace("Z", "+00:00")
         )
     except Exception:
         return None
 
 
-def read_existing():
-
-    if not OUTPUT.exists():
-        return None
-
-    try:
-        with OUTPUT.open(
-            "r",
-            encoding="utf-8",
-        ) as f:
-            return json.load(f)
-
-    except Exception:
-        return None
-
-
-def main():
-
-    now = datetime.now(timezone.utc)
-
-    # ==============================================
-    # 1. Fetch VesselFinder
-    # ==============================================
-
-    vf_html = fetch(
-        VESSELFINDER_URL
+def fetch_page():
+    response = requests.get(
+        SOURCE_URL,
+        headers=HEADERS,
+        timeout=30,
     )
 
-    vf = parse_vesselfinder(
-        vf_html
-    )
+    response.raise_for_status()
 
-    print(
-        "VesselFinder status:",
-        json.dumps(
-            vf,
-            indent=2,
+    return response.text
+
+
+def extract_position(html):
+    """
+    MarineRadar currently exposes text such as:
+
+    Latitude 24° 42.012' N · Longitude 127° 9.252' E
+
+    and elsewhere:
+
+    24.7002° N, 127.1542° E
+    """
+
+    # Prefer decimal-degree coordinates.
+    decimal_patterns = [
+        r'([-+]?\d{1,2}\.\d+)\s*°?\s*N'
+        r'.{0,100}?'
+        r'([-+]?\d{1,3}\.\d+)\s*°?\s*E',
+
+        r'latitude[^0-9\-+]*([-+]?\d{1,2}\.\d+)'
+        r'.{0,100}?'
+        r'longitude[^0-9\-+]*([-+]?\d{1,3}\.\d+)',
+    ]
+
+    for pattern in decimal_patterns:
+        match = re.search(
+            pattern,
+            html,
+            re.IGNORECASE | re.DOTALL,
         )
+
+        if match:
+            lat = float(match.group(1))
+            lng = float(match.group(2))
+
+            # The current vessel is north/east at the
+            # known public fix.
+            return lat, lng
+
+    # Fallback for degree/minute format.
+    dm_pattern = (
+        r'Latitude\s*'
+        r'(\d{1,2})°\s*'
+        r'(\d+(?:\.\d+)?)\'?\s*'
+        r'([NS])'
+        r'.{0,100}?'
+        r'Longitude\s*'
+        r'(\d{1,3})°\s*'
+        r'(\d+(?:\.\d+)?)\'?\s*'
+        r'([EW])'
     )
 
+    match = re.search(
+        dm_pattern,
+        html,
+        re.IGNORECASE | re.DOTALL,
+    )
 
-    # ==============================================
-    # 2. Decide whether VesselFinder gives us an
-    #    authoritative port position
-    # ==============================================
+    if match:
+        lat_deg = float(match.group(1))
+        lat_min = float(match.group(2))
+        lat_hemi = match.group(3).upper()
 
-    lat = vf.get("lat")
-    lng = vf.get("lng")
+        lng_deg = float(match.group(4))
+        lng_min = float(match.group(5))
+        lng_hemi = match.group(6).upper()
 
-    time_value = None
+        lat = lat_deg + lat_min / 60.0
+        lng = lng_deg + lng_min / 60.0
 
-    speed = None
-    course = None
-    heading = None
-    water_body = None
+        if lat_hemi == "S":
+            lat *= -1
 
-    source_note = "VesselFinder"
+        if lng_hemi == "W":
+            lng *= -1
 
+        return lat, lng
 
-    port_name = (
-        vf.get("port") or ""
-    ).lower()
-
-    nav_status = (
-        vf.get("navigation_status") or ""
-    ).lower()
+    return None, None
 
 
-    # If VesselFinder explicitly says the vessel has
-    # arrived / is moored at a known port, use the
-    # port coordinates rather than an old offshore fix.
+def extract_ais_time(html):
+    """
+    Tries to find ISO timestamp first.
+
+    Current public MarineRadar data includes:
+    2026-08-17T01:11:00Z
+    """
+
+    patterns = [
+        r'20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',
+
+        r'(\d{1,2})\s+'
+        r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        r'\s+(20\d{2})'
+        r'.{0,40}?'
+        r'(\d{2}:\d{2})'
+        r'\s*UTC',
+    ]
+
+    match = re.search(
+        patterns[0],
+        html,
+        re.IGNORECASE,
+    )
+
+    if match:
+        return match.group(0)
+
+    match = re.search(
+        patterns[1],
+        html,
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    if match:
+        day = int(match.group(1))
+        month_text = match.group(2)
+        year = int(match.group(3))
+        time_text = match.group(4)
+
+        parsed = datetime.strptime(
+            f"{day} {month_text} {year} {time_text}",
+            "%d %b %Y %H:%M",
+        ).replace(tzinfo=timezone.utc)
+
+        return parsed.isoformat().replace("+00:00", "Z")
+
+    return None
+
+
+def extract_speed(html):
+    patterns = [
+        r'Current speed[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*kn',
+        r'([0-9]+(?:\.[0-9]+)?)\s*kn\s*(?:Speed|Current speed)',
+        r'([0-9]+(?:\.[0-9]+)?)\s*kn',
+    ]
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            html,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if match:
+            return parse_float(match.group(1))
+
+    return None
+
+
+def extract_course(html):
+    patterns = [
+        r'Course(?: over ground)?[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*°',
+        r'([0-9]+(?:\.[0-9]+)?)\s*°\s*/\s*[0-9.]+\s*°',
+    ]
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            html,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if match:
+            return parse_float(match.group(1))
+
+    return None
+
+
+def extract_heading(html):
+    patterns = [
+        r'Heading[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*°',
+        r'[0-9.]+\s*°\s*/\s*([0-9]+(?:\.[0-9]+)?)\s*°',
+    ]
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            html,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if match:
+            return parse_float(match.group(1))
+
+    return None
+
+
+def extract_navigation_status(html):
+    statuses = [
+        "Under way using engine",
+        "Moored",
+        "At anchor",
+        "Not under command",
+        "Restricted manoeuverability",
+        "Constrained by her draught",
+    ]
+
+    for status in statuses:
+        if status.lower() in html.lower():
+            return status
+
+    return None
+
+
+def extract_water_body(html):
+    known_areas = [
+        "Papua New Guinean Exclusive Economic Zone",
+        "Philippine Sea",
+        "East China Sea",
+        "South Pacific Ocean",
+        "Tasman Sea",
+    ]
+
+    lower_html = html.lower()
+
+    for area in known_areas:
+        if area.lower() in lower_html:
+            return area
+
+    return ""
+
+
+def build_record(html, checked_at):
+    lat, lng = extract_position(html)
+
+    ais_time = extract_ais_time(html)
+
+    speed = extract_speed(html)
+    course = extract_course(html)
+    heading = extract_heading(html)
+
+    nav_status = extract_navigation_status(html)
+    water_body = extract_water_body(html)
 
     if (
-        port_name in KNOWN_PORTS
-        and (
-            "moor" in nav_status
-            or vf.get("arrival_time")
-        )
+        lat is None
+        or lng is None
+        or ais_time is None
     ):
-
-        lat = KNOWN_PORTS[
-            port_name
-        ]["lat"]
-
-        lng = KNOWN_PORTS[
-            port_name
-        ]["lng"]
-
-        time_value = (
-            vf.get("arrival_time")
-            or now.isoformat()
-            .replace("+00:00", "Z")
+        raise RuntimeError(
+            "Could not parse an exact AIS position/time "
+            "from MarineRadar"
         )
 
-        speed = 0.0
-
-        source_note = (
-            "VesselFinder port status"
-        )
-
-        water_body = (
-            vf.get("port")
-        )
-
-        print(
-            f"VesselFinder confirms vessel "
-            f"at {vf.get('port')}."
-        )
-
-
-    # ==============================================
-    # 3. If no usable coordinates from VesselFinder,
-    #    try Voyage Radar.
-    # ==============================================
-
-    if lat is None or lng is None:
-
-        print(
-            "VesselFinder did not expose coordinates."
-        )
-
-        print(
-            "Checking Voyage Radar as coordinate fallback."
-        )
-
-        vr_html = fetch(
-            VOYAGE_RADAR_URL
-        )
-
-        vr = parse_voyage_radar(
-            vr_html
-        )
-
-        vr_time = parse_iso(
-            vr.get("time")
-        )
-
-        age = (
-            now - vr_time
-            if vr_time
-            else None
-        )
-
-        print(
-            "Voyage Radar fix age:",
-            age,
-        )
-
-
-        # If Voyage Radar position is fresh enough,
-        # use it.
-
-        if (
-            age is not None
-            and age <= timedelta(hours=6)
-        ):
-
-            lat = vr["lat"]
-            lng = vr["lng"]
-
-            time_value = vr["time"]
-
-            speed = vr["speed"]
-            course = vr["course"]
-            heading = vr["heading"]
-            water_body = vr["waterBody"]
-
-            source_note = (
-                "Voyage Radar"
-            )
-
-
-        else:
-
-            # --------------------------------------
-            # Voyage Radar is stale.
-            #
-            # If VesselFinder says the ship is at a
-            # known port, use that port instead.
-            # Otherwise fail rather than publishing
-            # an old position as current.
-            # --------------------------------------
-
-            if (
-                port_name in KNOWN_PORTS
-                and vf.get("arrival_time")
-            ):
-
-                lat = KNOWN_PORTS[
-                    port_name
-                ]["lat"]
-
-                lng = KNOWN_PORTS[
-                    port_name
-                ]["lng"]
-
-                time_value = (
-                    vf.get("arrival_time")
-                )
-
-                speed = 0.0
-
-                water_body = (
-                    vf.get("port")
-                )
-
-                source_note = (
-                    "VesselFinder confirmed port position"
-                )
-
-            else:
-
-                raise RuntimeError(
-                    "No fresh AIS coordinates available. "
-                    "Voyage Radar fallback is stale."
-                )
-
-
-    # ==============================================
-    # 4. Final JSON
-    # ==============================================
-
-    if not time_value:
-
-        time_value = (
-            vf.get("arrival_time")
-            or now.isoformat()
-            .replace("+00:00", "Z")
-        )
-
-
-    new_data = {
-
+    return {
         "vessel": VESSEL,
-
         "imo": IMO,
         "mmsi": MMSI,
 
-        "lat": float(lat),
-        "lng": float(lng),
+        "lat": round(lat, 6),
+        "lng": round(lng, 6),
 
-        "time": time_value,
-
-        "reported": (
-            vf.get("arrival_time")
-            or time_value
-        ),
+        "time": ais_time,
+        "reported": ais_time,
 
         "speed": speed,
         "course": course,
@@ -709,84 +345,28 @@ def main():
 
         "waterBody": water_body,
 
-        "navigation_status":
-            vf.get("navigation_status"),
+        "navigation_status": nav_status,
 
-        "port":
-            vf.get("port"),
+        "port": None,
 
-        "position_age":
-            vf.get("position_age_text"),
+        "position_age": None,
 
-        "source":
-            source_note,
+        "source": "MarineRadar terrestrial AIS",
+        "source_url": SOURCE_URL,
 
-        "source_url":
-            VESSELFINDER_URL,
-
-        "checked_at":
-            now.isoformat()
-            .replace("+00:00", "Z"),
+        # This is the important field your HTML reads.
+        "checked_at": checked_at,
     }
 
 
-    # ==============================================
-    # 5. Don't replace a newer real fix with an
-    #    older one.
-    # ==============================================
-
-    existing = read_existing()
-
-    if existing:
-
-        existing_time = parse_iso(
-            existing.get("time")
-        )
-
-        new_time = parse_iso(
-            new_data.get("time")
-        )
-
-
-        if (
-            existing_time
-            and new_time
-            and new_time < existing_time
-        ):
-
-            print(
-                "New data timestamp is older "
-                "than existing ais.json."
-            )
-
-            print(
-                "Existing:",
-                existing_time,
-            )
-
-            print(
-                "New:",
-                new_time,
-            )
-
-            print(
-                "Keeping existing ais.json"
-            )
-
-            return
-
-
-    # ==============================================
-    # 6. Write output
-    # ==============================================
-
-    with OUTPUT.open(
+def save_record(record):
+    with OUTPUT_FILE.open(
         "w",
         encoding="utf-8",
     ) as f:
 
         json.dump(
-            new_data,
+            record,
             f,
             indent=2,
             ensure_ascii=False,
@@ -795,24 +375,69 @@ def main():
         f.write("\n")
 
 
-    print(
-        json.dumps(
-            new_data,
-            indent=2,
+def main():
+    checked_at = utc_now_iso()
+
+    existing = load_existing()
+
+    try:
+        html = fetch_page()
+
+        fresh = build_record(
+            html,
+            checked_at,
         )
-    )
+
+        fresh_time = parse_iso_utc(
+            fresh["time"]
+        )
+
+        existing_time = (
+            parse_iso_utc(
+                existing.get("time")
+            )
+            if existing
+            else None
+        )
+
+        /*
+        Python doesn't support C-style comments.
+        */
+
+    except Exception as exc:
+        print(
+            "Could not retrieve/parse fresh AIS:",
+            exc,
+        )
+
+        if existing:
+            # Even if there is no newer AIS fix,
+            # record that we checked the source now.
+            existing["checked_at"] = checked_at
+            existing["source_url"] = SOURCE_URL
+
+            save_record(existing)
+
+            print(
+                "No newer exact AIS fix found."
+            )
+
+            print(
+                "Updated checked_at:",
+                checked_at,
+            )
+
+            print(
+                json.dumps(
+                    existing,
+                    indent=2,
+                )
+            )
+
+            return
+
+        raise
 
 
 if __name__ == "__main__":
-
-    try:
-        main()
-
-    except Exception as exc:
-
-        print(
-            f"AIS update failed: {exc}",
-            file=sys.stderr,
-        )
-
-        sys.exit(1)
+    main()
