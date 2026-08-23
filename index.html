@@ -259,6 +259,7 @@ button:hover {
 
 <div class="header">
   <h2>🚢 GLOVIS CENTURY</h2>
+
   <div class="sub">
     IMO 9590589 · Tesla voyage tracker
   </div>
@@ -314,11 +315,6 @@ const SOURCE_URL =
    PORTS
    ================================================= */
 
-/*
-   Actual Suva arrival:
-   22 Aug 2026 19:55 UTC
-*/
-
 const SUVA = {
   name: "Suva",
   lat: -18.1416,
@@ -328,14 +324,9 @@ const SUVA = {
 
 
 /*
-   ESTIMATED SUVA DEPARTURE
-
-   Change this manually once you know the actual
-   departure time.
-
-   This example is:
-   24 Aug 2026 05:34 UTC
-   = 24 Aug 2026 17:34 Fiji/NZ time
+   Estimated departure:
+   Monday 24 Aug 2026 at 12:00 pm NZST
+   = Monday 24 Aug 2026 at 00:00 UTC
 */
 
 const SUVA_DEPARTURE = {
@@ -352,12 +343,6 @@ const LAUTOKA = {
   lng: 177.4505
 };
 
-
-/*
-   Auckland schedule:
-   28 Aug 2026 00:01 NZST
-   = 27 Aug 2026 12:01 UTC
-*/
 
 const AUCKLAND = {
   name: "Auckland",
@@ -427,7 +412,7 @@ const map =
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
-    maxZoom: 20,
+    maxZoom: 18,
     attribution: "&copy; OpenStreetMap contributors"
   }
 ).addTo(map);
@@ -656,10 +641,6 @@ function getEstimatedPosition(selectedTime) {
     latestAIS.time;
 
 
-  /*
-     Latest AIS is already at or after Auckland.
-  */
-
   if (
     aisTime >= AUCKLAND.time
   ) {
@@ -673,15 +654,9 @@ function getEstimatedPosition(selectedTime) {
 
 
   /*
-     ------------------------------------------------
-     NEW AIS FIX AFTER SUVA DEPARTURE
-
-     This is the important automatic re-anchor logic.
-
-     Once latestAIS.time is newer than the planned
-     Suva departure, use the newest real AIS position
-     as the starting point for all future estimates.
-     ------------------------------------------------
+     Latest AIS is after Suva departure:
+     use the latest real AIS position as the new
+     starting point for the remaining estimate.
   */
 
   if (
@@ -736,10 +711,7 @@ function getEstimatedPosition(selectedTime) {
 
 
   /*
-     ------------------------------------------------
-     AIS confirms vessel has reached Suva,
-     but it hasn't reached our departure time yet.
-     ------------------------------------------------
+     AIS says vessel has reached Suva.
   */
 
   if (
@@ -759,8 +731,7 @@ function getEstimatedPosition(selectedTime) {
 
 
     /*
-       Hold ship at latest AIS / Suva position
-       until estimated departure.
+       Hold at Suva until departure.
     */
 
     if (
@@ -776,8 +747,8 @@ function getEstimatedPosition(selectedTime) {
 
 
     /*
-       No newer AIS yet, so estimate departure
-       from Suva itself.
+       No newer AIS yet:
+       estimate from Suva to Auckland.
     */
 
     if (
@@ -816,9 +787,7 @@ function getEstimatedPosition(selectedTime) {
 
 
   /*
-     ------------------------------------------------
-     Vessel is still before Suva.
-     ------------------------------------------------
+     Before Suva.
   */
 
   if (
@@ -832,10 +801,6 @@ function getEstimatedPosition(selectedTime) {
     };
   }
 
-
-  /*
-     Latest AIS -> Suva.
-  */
 
   if (
     selectedTime <= SUVA.time
@@ -864,10 +829,6 @@ function getEstimatedPosition(selectedTime) {
   }
 
 
-  /*
-     Arrived Suva, waiting to depart.
-  */
-
   if (
     selectedTime <= SUVA_DEPARTURE.time
   ) {
@@ -879,10 +840,6 @@ function getEstimatedPosition(selectedTime) {
     };
   }
 
-
-  /*
-     Suva -> Auckland estimate.
-  */
 
   if (
     selectedTime <= AUCKLAND.time
@@ -942,6 +899,7 @@ function updateSliderRange() {
       )
     );
 
+
   slider.min = 0;
   slider.max = totalHours;
 }
@@ -951,6 +909,10 @@ function updateSliderRange() {
    FORMATTERS
    ================================================= */
 
+/*
+   All displayed times use NZ time.
+*/
+
 const dateFormat =
   new Intl.DateTimeFormat(
     "en-NZ",
@@ -959,6 +921,7 @@ const dateFormat =
       weekday: "short",
       day: "numeric",
       month: "short",
+      year: "numeric",
       hour: "numeric",
       minute: "2-digit"
     }
@@ -1024,6 +987,7 @@ function getAisRangeHint(p) {
         distance: distance
       };
     }
+
   });
 
 
@@ -1167,11 +1131,6 @@ function updateVoyage(hours) {
 
 function updateRouteLines(p) {
 
-
-  /*
-     Waiting at Suva.
-  */
-
   if (
     p.leg === "AT_SUVA"
   ) {
@@ -1190,10 +1149,6 @@ function updateRouteLines(p) {
     return;
   }
 
-
-  /*
-     Re-anchored route from latest real AIS.
-  */
 
   if (
     p.leg === "AIS_TO_AUCKLAND"
@@ -1215,10 +1170,6 @@ function updateRouteLines(p) {
   }
 
 
-  /*
-     Estimated Suva -> Auckland.
-  */
-
   if (
     p.leg === "SUVA_TO_AUCKLAND"
   ) {
@@ -1238,10 +1189,6 @@ function updateRouteLines(p) {
     return;
   }
 
-
-  /*
-     AIS -> Suva.
-  */
 
   if (
     p.leg === "AIS_TO_SUVA"
@@ -1264,10 +1211,6 @@ function updateRouteLines(p) {
   }
 
 
-  /*
-     Auckland.
-  */
-
   if (
     p.leg === "AUCKLAND"
   ) {
@@ -1284,10 +1227,6 @@ function updateRouteLines(p) {
     return;
   }
 
-
-  /*
-     Default.
-  */
 
   travelledLine.setLatLngs([
     [latestAIS.lat, latestAIS.lng]
@@ -1393,7 +1332,8 @@ async function refreshAIS() {
 
     const response =
       await fetch(
-        "ais.json?t=" + Date.now(),
+        "ais.json?t=" +
+        Date.now(),
         {
           cache: "no-store"
         }
@@ -1479,11 +1419,23 @@ async function refreshAIS() {
     ]);
 
 
+    /*
+       IMPORTANT:
+       Display the UTC AIS timestamp in NZ local time.
+    */
+
     aisMarker.setTooltipContent(
       "Last real AIS · " +
-      dateFormat.format(latestAIS.reported)
+      dateFormat.format(
+        latestAIS.time
+      )
     );
 
+
+    /*
+       Same NZ-formatted timestamp in the blue
+       headline rather than raw ISO / Z format.
+    */
 
     let text =
       `🟡 <strong>Latest AIS:</strong>
@@ -1554,7 +1506,8 @@ async function refreshAIS() {
        </a>`;
 
 
-    headline.innerHTML = text;
+    headline.innerHTML =
+      text;
 
 
     updateSliderRange();
@@ -1573,9 +1526,13 @@ async function refreshAIS() {
     );
 
 
+    /*
+       Fallback also shown in NZ time.
+    */
+
     let fallbackText =
       `🟡 <strong>Using built-in last AIS:</strong>
-       ${latestAIS.reported}
+       ${dateFormat.format(latestAIS.time)}
        · ${latestAIS.lat.toFixed(5)}°,
        ${latestAIS.lng.toFixed(5)}°`;
 
@@ -1624,7 +1581,8 @@ function fitMap() {
    PLAY
    ================================================= */
 
-let timer = null;
+let timer =
+  null;
 
 
 function playVoyage() {
@@ -1637,20 +1595,31 @@ function playVoyage() {
 
   if (timer) {
 
-    clearInterval(timer);
+    clearInterval(
+      timer
+    );
 
-    timer = null;
+
+    timer =
+      null;
+
 
     button.textContent =
       "▶ Play";
+
 
     return;
   }
 
 
-  slider.value = 0;
+  slider.value =
+    0;
 
-  updateVoyage(0);
+
+  updateVoyage(
+    0
+  );
+
 
   button.textContent =
     "⏸ Pause";
@@ -1661,28 +1630,44 @@ function playVoyage() {
       () => {
 
         let hours =
-          Number(slider.value) + 3;
+          Number(
+            slider.value
+          )
+          +
+          3;
 
 
         if (
           hours >
-          Number(slider.max)
+          Number(
+            slider.max
+          )
         ) {
 
-          clearInterval(timer);
+          clearInterval(
+            timer
+          );
 
-          timer = null;
+
+          timer =
+            null;
+
 
           button.textContent =
             "▶ Play";
+
 
           return;
         }
 
 
-        slider.value = hours;
+        slider.value =
+          hours;
 
-        updateVoyage(hours);
+
+        updateVoyage(
+          hours
+        );
 
       },
       40
@@ -1695,7 +1680,9 @@ function playVoyage() {
    ================================================= */
 
 document
-  .getElementById("todayButton")
+  .getElementById(
+    "todayButton"
+  )
   .addEventListener(
     "click",
     goToday
@@ -1703,7 +1690,9 @@ document
 
 
 document
-  .getElementById("plus7Button")
+  .getElementById(
+    "plus7Button"
+  )
   .addEventListener(
     "click",
     goPlus7
@@ -1711,7 +1700,9 @@ document
 
 
 document
-  .getElementById("refreshButton")
+  .getElementById(
+    "refreshButton"
+  )
   .addEventListener(
     "click",
     refreshAIS
@@ -1719,7 +1710,9 @@ document
 
 
 document
-  .getElementById("playButton")
+  .getElementById(
+    "playButton"
+  )
   .addEventListener(
     "click",
     playVoyage
@@ -1729,9 +1722,13 @@ document
 slider.addEventListener(
   "input",
   () => {
+
     updateVoyage(
-      Number(slider.value)
+      Number(
+        slider.value
+      )
     );
+
   }
 );
 
@@ -1744,7 +1741,9 @@ function resizeMap() {
 
   setTimeout(
     () => {
+
       map.invalidateSize();
+
     },
     100
   );
