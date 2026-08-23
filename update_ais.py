@@ -50,7 +50,7 @@ def load_existing():
         with OUTPUT_FILE.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Do not reuse old GLOVIS CENTURY data.
+        # Never reuse GLOVIS CENTURY data.
         if str(data.get("imo", "")) != IMO:
             return None
 
@@ -85,25 +85,18 @@ def fetch_page():
 
 
 def extract_position(html):
-    """
-    MarineRadar currently exposes text such as:
-
-    Latitude 24° 42.012' N · Longitude 127° 9.252' E
-
-    and elsewhere:
-
-    24.7002° N, 127.1542° E
-    """
-
     # Prefer decimal-degree coordinates.
     decimal_patterns = [
-        r'([-+]?\d{1,2}\.\d+)\s*°?\s*N'
-        r'.{0,100}?'
-        r'([-+]?\d{1,3}\.\d+)\s*°?\s*E',
-
-        r'latitude[^0-9\-+]*([-+]?\d{1,2}\.\d+)'
-        r'.{0,100}?'
-        r'longitude[^0-9\-+]*([-+]?\d{1,3}\.\d+)',
+        (
+            r'([-+]?\d{1,2}\.\d+)\s*°?\s*N'
+            r'.{0,100}?'
+            r'([-+]?\d{1,3}\.\d+)\s*°?\s*E'
+        ),
+        (
+            r'latitude[^0-9\-+]*([-+]?\d{1,2}\.\d+)'
+            r'.{0,100}?'
+            r'longitude[^0-9\-+]*([-+]?\d{1,3}\.\d+)'
+        ),
     ]
 
     for pattern in decimal_patterns:
@@ -116,12 +109,9 @@ def extract_position(html):
         if match:
             lat = float(match.group(1))
             lng = float(match.group(2))
-
-            # The current vessel is north/east at the
-            # known public fix.
             return lat, lng
 
-    # Fallback for degree/minute format.
+    # Fallback degree/minute format.
     dm_pattern = (
         r'Latitude\s*'
         r'(\d{1,2})°\s*'
@@ -164,26 +154,9 @@ def extract_position(html):
 
 
 def extract_ais_time(html):
-    """
-    Tries to find ISO timestamp first.
-
-    Current public MarineRadar data includes:
-    2026-08-17T01:11:00Z
-    """
-
-    patterns = [
-        r'20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',
-
-        r'(\d{1,2})\s+'
-        r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
-        r'\s+(20\d{2})'
-        r'.{0,40}?'
-        r'(\d{2}:\d{2})'
-        r'\s*UTC',
-    ]
-
+    # ISO timestamp.
     match = re.search(
-        patterns[0],
+        r'20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',
         html,
         re.IGNORECASE,
     )
@@ -191,8 +164,16 @@ def extract_ais_time(html):
     if match:
         return match.group(0)
 
+    # Human-readable UTC timestamp.
     match = re.search(
-        patterns[1],
+        (
+            r'(\d{1,2})\s+'
+            r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+            r'\s+(20\d{2})'
+            r'.{0,40}?'
+            r'(\d{2}:\d{2})'
+            r'\s*UTC'
+        ),
         html,
         re.IGNORECASE | re.DOTALL,
     )
@@ -281,8 +262,10 @@ def extract_navigation_status(html):
         "Constrained by her draught",
     ]
 
+    lower_html = html.lower()
+
     for status in statuses:
-        if status.lower() in html.lower():
+        if status.lower() in lower_html:
             return status
 
     return None
@@ -308,7 +291,6 @@ def extract_water_body(html):
 
 def build_record(html, checked_at):
     lat, lng = extract_position(html)
-
     ais_time = extract_ais_time(html)
 
     speed = extract_speed(html)
@@ -318,43 +300,28 @@ def build_record(html, checked_at):
     nav_status = extract_navigation_status(html)
     water_body = extract_water_body(html)
 
-    if (
-        lat is None
-        or lng is None
-        or ais_time is None
-    ):
+    if lat is None or lng is None or ais_time is None:
         raise RuntimeError(
-            "Could not parse an exact AIS position/time "
-            "from MarineRadar"
+            "Could not parse an exact AIS position/time from MarineRadar"
         )
 
     return {
         "vessel": VESSEL,
         "imo": IMO,
         "mmsi": MMSI,
-
         "lat": round(lat, 6),
         "lng": round(lng, 6),
-
         "time": ais_time,
         "reported": ais_time,
-
         "speed": speed,
         "course": course,
         "heading": heading,
-
         "waterBody": water_body,
-
         "navigation_status": nav_status,
-
         "port": None,
-
         "position_age": None,
-
         "source": "MarineRadar terrestrial AIS",
         "source_url": SOURCE_URL,
-
-        # This is the important field your HTML reads.
         "checked_at": checked_at,
     }
 
@@ -364,14 +331,12 @@ def save_record(record):
         "w",
         encoding="utf-8",
     ) as f:
-
         json.dump(
             record,
             f,
             indent=2,
             ensure_ascii=False,
         )
-
         f.write("\n")
 
 
@@ -393,16 +358,47 @@ def main():
         )
 
         existing_time = (
-            parse_iso_utc(
-                existing.get("time")
-            )
+            parse_iso_utc(existing.get("time"))
             if existing
             else None
         )
 
-        /*
-        Python doesn't support C-style comments.
-        */
+        # Never replace a newer saved AIS fix
+        # with an older scraped fix.
+        if (
+            existing
+            and existing_time
+            and fresh_time
+            and existing_time > fresh_time
+        ):
+            existing["checked_at"] = checked_at
+            existing["source_url"] = SOURCE_URL
+
+            save_record(existing)
+
+            print(
+                "Scraped AIS fix is older than saved fix."
+            )
+            print(
+                "Keeping existing position and updating checked_at."
+            )
+            print(
+                json.dumps(
+                    existing,
+                    indent=2,
+                )
+            )
+            return
+
+        save_record(fresh)
+
+        print("Saved MORNING CARA AIS:")
+        print(
+            json.dumps(
+                fresh,
+                indent=2,
+            )
+        )
 
     except Exception as exc:
         print(
@@ -411,29 +407,27 @@ def main():
         )
 
         if existing:
-            # Even if there is no newer AIS fix,
-            # record that we checked the source now.
+            # The source was checked successfully enough
+            # for this workflow run, but there was no
+            # usable newer position.
             existing["checked_at"] = checked_at
             existing["source_url"] = SOURCE_URL
 
             save_record(existing)
 
             print(
-                "No newer exact AIS fix found."
+                "Keeping existing MORNING CARA AIS."
             )
-
             print(
                 "Updated checked_at:",
                 checked_at,
             )
-
             print(
                 json.dumps(
                     existing,
                     indent=2,
                 )
             )
-
             return
 
         raise
