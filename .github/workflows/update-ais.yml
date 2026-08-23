@@ -2,7 +2,7 @@ name: Update GLOVIS CENTURY AIS
 
 on:
   schedule:
-    # Run at 17 minutes past every hour.
+    # Run at 7, 27, 47 and 57 minutes past every hour.
     - cron: "7,27,47,57 * * * *"
 
   # Allows you to press "Run workflow" manually.
@@ -25,12 +25,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install requests
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pyyaml
 
-      - name: Fetch latest Voyage Radar AIS
+      - name: Fetch latest GLOVIS CENTURY AIS
         run: |
           python update_ais.py
 
@@ -43,16 +43,29 @@ jobs:
             exit 1
           fi
 
-      - name: Commit updated AIS
+      - name: Update route YAML from AIS
+        run: |
+          python update_route.py
+
+      - name: Show updated route
+        run: |
+          if [ -f route.yml ]; then
+            cat route.yml
+          else
+            echo "route.yml was not found"
+            exit 1
+          fi
+
+      - name: Commit updated AIS and route
         run: |
           git config user.name "glovis-ais-bot"
           git config user.email "actions@users.noreply.github.com"
 
-          git add ais.json
+          git add ais.json route.yml
 
           if git diff --cached --quiet; then
-            echo "No AIS changes to commit"
+            echo "No AIS or route changes to commit"
           else
-            git commit -m "Update GLOVIS CENTURY AIS"
+            git commit -m "Update GLOVIS CENTURY AIS and route"
             git push
           fi
