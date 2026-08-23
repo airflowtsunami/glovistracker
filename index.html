@@ -474,6 +474,10 @@ const map =
 
 
 L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
+);
+
+L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 18,
@@ -639,10 +643,6 @@ ship.on(
   }
 );
 
-
-/*
-   Mobile/touch users can tap the boat.
-*/
 
 ship.on(
   "click",
@@ -909,13 +909,9 @@ function updateAISLabel() {
     getAISNZTime();
 
 
-  const checkedNZTime =
-    getCheckedNZTime();
-
-
   aisMarker.setTooltipContent(
     "AIS fix: " +
-    aisNZTime 
+    aisNZTime
   );
 }
 
@@ -1072,6 +1068,7 @@ function updateVoyage(hours) {
 
 /* =================================================
    ROUTE DISPLAY
+   Shanghai → AIS → estimated position → Auckland
    ================================================= */
 
 function updateRouteLines(p) {
@@ -1081,6 +1078,7 @@ function updateRouteLines(p) {
   ) {
 
     travelledLine.setLatLngs([
+      [SHANGHAI.lat, SHANGHAI.lng],
       [latestAIS.lat, latestAIS.lng],
       [p.lat, p.lng]
     ]);
@@ -1101,6 +1099,7 @@ function updateRouteLines(p) {
   ) {
 
     travelledLine.setLatLngs([
+      [SHANGHAI.lat, SHANGHAI.lng],
       [latestAIS.lat, latestAIS.lng],
       [AUCKLAND.lat, AUCKLAND.lng]
     ]);
@@ -1113,7 +1112,13 @@ function updateRouteLines(p) {
   }
 
 
+  /*
+     At the AIS fix, show the completed route
+     from Shanghai to the real AIS position.
+  */
+
   travelledLine.setLatLngs([
+    [SHANGHAI.lat, SHANGHAI.lng],
     [latestAIS.lat, latestAIS.lng]
   ]);
 
@@ -1529,6 +1534,7 @@ async function refreshAIS() {
 function fitMap() {
 
   const points = [
+    [SHANGHAI.lat, SHANGHAI.lng],
     [latestAIS.lat, latestAIS.lng],
     [AUCKLAND.lat, AUCKLAND.lng]
   ];
