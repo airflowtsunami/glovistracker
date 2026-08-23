@@ -168,6 +168,7 @@ button:hover {
   padding: 3px 7px;
   font-weight: 800;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .current-label {
@@ -190,6 +191,7 @@ button:hover {
     0 0 0 0 rgba(255,212,0,.75),
     0 2px 8px rgba(0,0,0,.65);
   animation: pulseAIS 1.8s infinite;
+  cursor: pointer;
 }
 
 @keyframes pulseAIS {
@@ -320,11 +322,6 @@ const SOURCE_URL =
    VOYAGE
    ================================================= */
 
-/*
-   Shanghai departure:
-   15 Aug 2026 18:02 UTC
-*/
-
 const SHANGHAI = {
   name: "Shanghai",
   lat: 31.2304,
@@ -333,17 +330,13 @@ const SHANGHAI = {
 };
 
 
-/*
-   Auckland ETA:
-   27 Aug 2026 23:00 UTC
-   =
-   28 Aug 2026 11:00 NZST
-*/
-
 const AUCKLAND = {
   name: "Auckland",
   lat: -36.8406,
   lng: 174.7850,
+
+  // 27 Aug 2026 23:00 UTC
+  // = 28 Aug 2026 11:00 NZST
   time: new Date("2026-08-27T23:00:00Z")
 };
 
@@ -372,10 +365,6 @@ const aisIcon =
 
 /* =================================================
    FALLBACK AIS
-
-   Last exact public terrestrial AIS fix:
-   17 Aug 2026 01:11 UTC
-   24.7002 N, 127.1542 E
    ================================================= */
 
 let latestAIS = {
@@ -486,7 +475,7 @@ const aisMarker =
   )
   .addTo(map)
   .bindTooltip(
-    "Last real AIS",
+    "Last real AIS · click for source",
     {
       permanent: true,
       direction: "left",
@@ -494,6 +483,20 @@ const aisMarker =
       className: "ais-label"
     }
   );
+
+
+aisMarker.on(
+  "click",
+  () => {
+
+    window.open(
+      SOURCE_URL,
+      "_blank",
+      "noopener"
+    );
+
+  }
+);
 
 
 /* =================================================
@@ -587,12 +590,6 @@ function distanceNm(lat1, lng1, lat2, lng2) {
 
 /* =================================================
    POSITION ESTIMATE
-
-   Always projects from the newest real AIS point
-   to Auckland.
-
-   Every time ais.json updates, this automatically
-   re-anchors the trajectory.
    ================================================= */
 
 function getEstimatedPosition(selectedTime) {
@@ -699,8 +696,10 @@ const checkedFormat =
     "en-NZ",
     {
       timeZone: "Pacific/Auckland",
+      weekday: "short",
       day: "numeric",
       month: "short",
+      year: "numeric",
       hour: "numeric",
       minute: "2-digit"
     }
@@ -955,7 +954,8 @@ async function refreshAIS() {
 
     const response =
       await fetch(
-        "ais.json?t=" + Date.now(),
+        "ais.json?t=" +
+        Date.now(),
         {
           cache: "no-store"
         }
@@ -975,20 +975,13 @@ async function refreshAIS() {
       await response.json();
 
 
-    /*
-       Safety check.
-
-       Do NOT accidentally display GLOVIS CENTURY
-       data in the MORNING CARA tracker.
-    */
-
     if (
       ais.imo &&
       String(ais.imo) !== IMO
     ) {
 
       throw new Error(
-        "ais.json contains the wrong vessel: IMO " +
+        "ais.json contains wrong vessel IMO " +
         ais.imo
       );
     }
@@ -1000,7 +993,7 @@ async function refreshAIS() {
     ) {
 
       throw new Error(
-        "ais.json contains the wrong MMSI: " +
+        "ais.json contains wrong MMSI " +
         ais.mmsi
       );
     }
@@ -1077,11 +1070,65 @@ async function refreshAIS() {
       );
 
 
-    aisMarker.setTooltipContent(
+    let checkedNZTime =
+      null;
+
+
+    if (
+      latestAIS.checkedAt
+    ) {
+
+      const checkedDate =
+        new Date(
+          latestAIS.checkedAt
+        );
+
+
+      if (
+        !isNaN(
+          checkedDate.getTime()
+        )
+      ) {
+
+        checkedNZTime =
+          checkedFormat.format(
+            checkedDate
+          );
+      }
+    }
+
+
+    /* ---------------------------------------------
+       Yellow AIS marker tooltip
+       --------------------------------------------- */
+
+    let aisTooltip =
       "Last real AIS · " +
-      aisNZTime
+      aisNZTime;
+
+
+    if (
+      checkedNZTime
+    ) {
+
+      aisTooltip +=
+        " · checked " +
+        checkedNZTime;
+    }
+
+
+    aisTooltip +=
+      " · click for source";
+
+
+    aisMarker.setTooltipContent(
+      aisTooltip
     );
 
+
+    /* ---------------------------------------------
+       Blue AIS headline
+       --------------------------------------------- */
 
     let text =
       `🟡 <strong>Latest real AIS:</strong>
@@ -1122,24 +1169,11 @@ async function refreshAIS() {
 
 
     if (
-      latestAIS.checkedAt
+      checkedNZTime
     ) {
 
-      const checkedDate =
-        new Date(
-          latestAIS.checkedAt
-        );
-
-
-      if (
-        !isNaN(
-          checkedDate.getTime()
-        )
-      ) {
-
-        text +=
-          ` · checked ${checkedFormat.format(checkedDate)}`;
-      }
+      text +=
+        ` · <strong>checked ${checkedNZTime}</strong>`;
     }
 
 
@@ -1178,19 +1212,97 @@ async function refreshAIS() {
       );
 
 
-    aisMarker.setTooltipContent(
+    let checkedText =
+      "";
+
+
+    if (
+      latestAIS.checkedAt
+    ) {
+
+      const checkedDate =
+        new Date(
+          latestAIS.checkedAt
+        );
+
+
+      if (
+        !isNaN(
+          checkedDate.getTime()
+        )
+      ) {
+
+        checkedText =
+          checkedFormat.format(
+            checkedDate
+          );
+      }
+    }
+
+
+    let tooltip =
       "Last real AIS · " +
-      fallbackNZTime
+      fallbackNZTime;
+
+
+    if (
+      checkedText
+    ) {
+
+      tooltip +=
+        " · checked " +
+        checkedText;
+    }
+
+
+    tooltip +=
+      " · click for source";
+
+
+    aisMarker.setTooltipContent(
+      tooltip
     );
 
 
-    headline.innerHTML =
+    let fallbackText =
       `🟡 <strong>Using last known MORNING CARA AIS:</strong>
        ${fallbackNZTime}
        · ${latestAIS.lat.toFixed(5)}°,
-       ${latestAIS.lng.toFixed(5)}°
-       · ${latestAIS.speed} kn
-       · awaiting newer AIS`;
+       ${latestAIS.lng.toFixed(5)}°`;
+
+
+    if (
+      Number.isFinite(
+        latestAIS.speed
+      )
+    ) {
+
+      fallbackText +=
+        ` · ${latestAIS.speed} kn`;
+    }
+
+
+    if (
+      checkedText
+    ) {
+
+      fallbackText +=
+        ` · <strong>checked ${checkedText}</strong>`;
+    }
+
+
+    fallbackText +=
+      ` · awaiting newer AIS
+       · <a
+       href="${SOURCE_URL}"
+       target="_blank"
+       rel="noopener">
+       source
+       </a>`;
+
+
+    headline.innerHTML =
+      fallbackText;
 
 
     updateSliderRange();
@@ -1382,7 +1494,7 @@ refreshAIS();
 
 
 /*
-   Reload local ais.json every five minutes.
+   Reload ais.json every five minutes.
 */
 
 setInterval(
