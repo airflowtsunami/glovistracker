@@ -1,4 +1,4 @@
-name: Update GLOVIS CENTURY AIS
+name: Update Boat AIS
 
 on:
   schedule:
