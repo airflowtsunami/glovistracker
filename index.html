@@ -50,9 +50,29 @@ body {
   top: 8px;
   left: 8px;
   background: rgba(5,16,27,.94);
-  padding: 9px 12px;
+  padding: 7px 10px;
   border-radius: 10px;
   box-shadow: 0 5px 20px rgba(0,0,0,.35);
+}
+
+.vesselHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerBoatImage {
+  display: block;
+  width: 84px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.65);
+  box-shadow: 0 2px 7px rgba(0,0,0,.45);
+}
+
+.headerBoatText {
+  min-width: 0;
 }
 
 .header h2 {
@@ -68,7 +88,7 @@ body {
 #aisHeadline {
   position: absolute;
   z-index: 1001;
-  top: 70px;
+  top: 82px;
   left: 8px;
   right: 8px;
   background: rgba(0,194,255,.94);
@@ -149,6 +169,7 @@ button:hover {
 
 .ship-icon {
   font-size: 36px;
+  cursor: pointer;
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.75));
 }
 
@@ -194,6 +215,27 @@ button:hover {
   cursor: pointer;
 }
 
+.boat-hover-photo {
+  width: 250px;
+}
+
+.boat-hover-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.boat-hover-name {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  color: #10283b;
+}
+
 @keyframes pulseAIS {
   0% {
     box-shadow:
@@ -219,7 +261,16 @@ button:hover {
     top: 5px;
     left: 5px;
     right: 5px;
-    padding: 7px 9px;
+    padding: 5px 7px;
+  }
+
+  .vesselHeader {
+    gap: 7px;
+  }
+
+  .headerBoatImage {
+    width: 60px;
+    height: 42px;
   }
 
   .header h2 {
@@ -231,7 +282,7 @@ button:hover {
   }
 
   #aisHeadline {
-    top: 50px;
+    top: 61px;
     left: 5px;
     right: 5px;
     padding: 6px 8px;
@@ -260,6 +311,10 @@ button:hover {
     white-space: normal;
     max-width: 220px;
   }
+
+  .boat-hover-photo {
+    width: 190px;
+  }
 }
 </style>
 </head>
@@ -267,6 +322,7 @@ button:hover {
 <body>
 
 <div class="header vesselHeader">
+
   <img
     src="1.jpg"
     alt="MORNING CARA"
@@ -274,12 +330,15 @@ button:hover {
   >
 
   <div class="headerBoatText">
+
     <h2>🚢 MORNING CARA</h2>
 
     <div class="sub">
       IMO 9574092 · MMSI 441148000 · Tesla voyage tracker
     </div>
+
   </div>
+
 </div>
 
 <div id="aisHeadline">
@@ -328,8 +387,11 @@ const VESSEL_NAME = "MORNING CARA";
 const IMO = "9574092";
 const MMSI = "441148000";
 
-const SOURCE_URL =
+const DEFAULT_SOURCE_URL =
   "https://www.marineradar.com/vessel/mmsi-441148000/morning-cara";
+
+let currentSourceURL =
+  DEFAULT_SOURCE_URL;
 
 
 /* =================================================
@@ -349,8 +411,7 @@ const AUCKLAND = {
   lat: -36.8406,
   lng: 174.7850,
 
-  // 27 Aug 2026 23:00 UTC
-  // = 28 Aug 2026 11:00 NZST
+  // 28 Aug 2026 11:00 NZST
   time: new Date("2026-08-27T23:00:00Z")
 };
 
@@ -379,20 +440,20 @@ const aisIcon =
 
 /* =================================================
    FALLBACK AIS
-
-   Used only if ais.json cannot be loaded.
    ================================================= */
 
 let latestAIS = {
   lat: 24.7002,
   lng: 127.1542,
   time: new Date("2026-08-17T01:11:00Z"),
-  reported: "17 Aug 2026 01:11 UTC",
+  reported: "2026-08-17T01:11:00Z",
   speed: 17.6,
   course: 142,
   heading: 144,
   waterBody: "East China Sea",
-  source: "MarineRadar",
+  navigationStatus: "Under way using engine",
+  source: "MarineRadar terrestrial AIS",
+  sourceURL: DEFAULT_SOURCE_URL,
   checkedAt: null
 };
 
@@ -506,7 +567,7 @@ aisMarker.on(
   () => {
 
     window.open(
-      SOURCE_URL,
+      currentSourceURL,
       "_blank",
       "noopener"
     );
@@ -516,7 +577,7 @@ aisMarker.on(
 
 
 /* =================================================
-   ESTIMATED POSITION
+   ESTIMATED POSITION + BOAT IMAGE
    ================================================= */
 
 const ship =
@@ -536,7 +597,63 @@ const ship =
       offset: [18,0],
       className: "current-label"
     }
+  )
+  .bindPopup(
+    `
+      <div class="boat-hover-photo">
+        <img
+          src="1.jpg"
+          alt="MORNING CARA"
+        >
+        <div class="boat-hover-name">
+          🚢 MORNING CARA
+        </div>
+      </div>
+    `,
+    {
+      maxWidth: 280,
+      closeButton: false,
+      autoPan: false,
+      offset: [0,-15]
+    }
   );
+
+
+ship.on(
+  "mouseover",
+  function () {
+    this.openPopup();
+  }
+);
+
+
+ship.on(
+  "mouseout",
+  function () {
+    this.closePopup();
+  }
+);
+
+
+/*
+   Mobile/touch users can tap the boat.
+*/
+
+ship.on(
+  "click",
+  function () {
+
+    if (
+      this.isPopupOpen()
+    ) {
+      this.closePopup();
+    }
+    else {
+      this.openPopup();
+    }
+
+  }
+);
 
 
 /* =================================================
@@ -580,6 +697,7 @@ function interpolate(a, b, fraction) {
       Math.min(1, fraction)
     );
 
+
   return {
     lat:
       a.lat +
@@ -599,6 +717,7 @@ function distanceNm(lat1, lng1, lat2, lng2) {
       [lat1, lng1],
       [lat2, lng2]
     );
+
 
   return meters / 1852;
 }
@@ -664,7 +783,9 @@ function getEstimatedPosition(selectedTime) {
    ================================================= */
 
 const slider =
-  document.getElementById("slider");
+  document.getElementById(
+    "slider"
+  );
 
 
 function updateSliderRange() {
@@ -689,10 +810,7 @@ function updateSliderRange() {
 
 
 /* =================================================
-   NZ TIME FORMAT
-
-   Both the AIS fix time and checked_at are converted
-   into Pacific/Auckland time.
+   NZ TIME
    ================================================= */
 
 const dateFormat =
@@ -725,10 +843,6 @@ const checkedFormat =
   );
 
 
-/* =================================================
-   FORMAT AIS/CHECKED TIMES
-   ================================================= */
-
 function getAISNZTime() {
 
   if (
@@ -737,8 +851,10 @@ function getAISNZTime() {
       latestAIS.time.getTime()
     )
   ) {
+
     return "unknown";
   }
+
 
   return dateFormat.format(
     latestAIS.time
@@ -751,6 +867,7 @@ function getCheckedNZTime() {
   if (
     !latestAIS.checkedAt
   ) {
+
     return "unknown";
   }
 
@@ -766,6 +883,7 @@ function getCheckedNZTime() {
       checkedDate.getTime()
     )
   ) {
+
     return "unknown";
   }
 
@@ -777,12 +895,7 @@ function getCheckedNZTime() {
 
 
 /* =================================================
-   UPDATE REAL AIS LABEL
-
-   Explicitly shows:
-   AIS fix date/time
-   AND
-   checked_at date/time
+   AIS LABEL
    ================================================= */
 
 function updateAISLabel() {
@@ -875,7 +988,9 @@ function updateVoyage(hours) {
 
 
   document
-    .getElementById("dateDisplay")
+    .getElementById(
+      "dateDisplay"
+    )
     .textContent =
       dateFormat.format(
         selected
@@ -935,7 +1050,9 @@ function updateVoyage(hours) {
 
 
   document
-    .getElementById("status")
+    .getElementById(
+      "status"
+    )
     .textContent =
       status +
       " · " +
@@ -990,6 +1107,7 @@ function updateRouteLines(p) {
 
 
     futureRoute.setLatLngs([]);
+
 
     return;
   }
@@ -1092,7 +1210,9 @@ async function refreshAIS() {
       );
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
         "ais.json HTTP " +
@@ -1104,22 +1224,6 @@ async function refreshAIS() {
     const ais =
       await response.json();
 
-
-    console.log(
-      "ais.json:",
-      ais
-    );
-
-
-    console.log(
-      "AIS checked_at:",
-      ais.checked_at
-    );
-
-
-    /* ---------------------------------------------
-       Ensure this really is MORNING CARA
-       --------------------------------------------- */
 
     if (
       ais.imo &&
@@ -1187,11 +1291,6 @@ async function refreshAIS() {
     }
 
 
-    /*
-       IMPORTANT:
-       checked_at comes directly from ais.json.
-    */
-
     latestAIS = {
 
       lat:
@@ -1240,28 +1339,33 @@ async function refreshAIS() {
         ais.port ||
         "",
 
+      navigationStatus:
+        ais.navigation_status ||
+        "",
+
       source:
         ais.source ||
         "AIS",
 
+      sourceURL:
+        ais.source_url ||
+        DEFAULT_SOURCE_URL,
+
       checkedAt:
-        ais.checked_at
+        ais.checked_at ||
+        null
     };
 
 
-    /*
-       Move real AIS marker.
-    */
+    currentSourceURL =
+      latestAIS.sourceURL;
+
 
     aisMarker.setLatLng([
       latestAIS.lat,
       latestAIS.lng
     ]);
 
-
-    /*
-       Update yellow marker label using BOTH dates.
-    */
 
     updateAISLabel();
 
@@ -1273,14 +1377,6 @@ async function refreshAIS() {
     const checkedNZTime =
       getCheckedNZTime();
 
-
-    /* ---------------------------------------------
-       Blue headline
-
-       Explicitly separates:
-       AIS FIX time
-       LAST CHECKED time
-       --------------------------------------------- */
 
     let text =
       `🟡 <strong>AIS fix:</strong>
@@ -1312,6 +1408,15 @@ async function refreshAIS() {
 
 
     if (
+      latestAIS.navigationStatus
+    ) {
+
+      text +=
+        ` · ${latestAIS.navigationStatus}`;
+    }
+
+
+    if (
       latestAIS.waterBody
     ) {
 
@@ -1328,7 +1433,7 @@ async function refreshAIS() {
 
     text +=
       ` · <a
-       href="${SOURCE_URL}"
+       href="${currentSourceURL}"
        target="_blank"
        rel="noopener">
        source
@@ -1355,16 +1460,20 @@ async function refreshAIS() {
     );
 
 
+    currentSourceURL =
+      latestAIS.sourceURL ||
+      DEFAULT_SOURCE_URL;
+
+
+    updateAISLabel();
+
+
     const fallbackNZTime =
       getAISNZTime();
 
 
-    /*
-       Because fallback data does NOT have a genuine
-       checked_at value, don't pretend it does.
-    */
-
-    updateAISLabel();
+    const checkedNZTime =
+      getCheckedNZTime();
 
 
     let fallbackText =
@@ -1388,12 +1497,12 @@ async function refreshAIS() {
     fallbackText +=
       `<br>
        🔎 <strong>Last checked:</strong>
-       unavailable because ais.json could not be loaded`;
+       ${checkedNZTime}`;
 
 
     fallbackText +=
       ` · <a
-       href="${SOURCE_URL}"
+       href="${currentSourceURL}"
        target="_blank"
        rel="noopener">
        source
@@ -1634,10 +1743,6 @@ updateAISLabel();
 
 refreshAIS();
 
-
-/*
-   Reload ais.json every five minutes.
-*/
 
 setInterval(
   refreshAIS,
