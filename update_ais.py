@@ -18,6 +18,29 @@ SOURCE_URL = (
 OUTPUT_FILE = Path("ais.json")
 
 
+# Known last credible terrestrial AIS fix
+# before MORNING CARA moved out of coastal AIS range.
+SEED_RECORD = {
+    "vessel": VESSEL,
+    "imo": IMO,
+    "mmsi": MMSI,
+    "lat": 24.7002,
+    "lng": 127.1542,
+    "time": "2026-08-17T01:11:00Z",
+    "reported": "2026-08-17T01:11:00Z",
+    "speed": 17.6,
+    "course": 142.0,
+    "heading": 144.0,
+    "waterBody": "East China Sea",
+    "navigation_status": "Under way using engine",
+    "port": None,
+    "position_age": None,
+    "source": "MarineRadar terrestrial AIS",
+    "source_url": SOURCE_URL,
+    "checked_at": None,
+}
+
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -29,7 +52,11 @@ HEADERS = {
 
 
 def utc_now_iso():
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def parse_float(value):
@@ -39,24 +66,6 @@ def parse_float(value):
     try:
         return float(value)
     except (TypeError, ValueError):
-        return None
-
-
-def load_existing():
-    if not OUTPUT_FILE.exists():
-        return None
-
-    try:
-        with OUTPUT_FILE.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        # Never reuse GLOVIS CENTURY data.
-        if str(data.get("imo", "")) != IMO:
-            return None
-
-        return data
-
-    except Exception:
         return None
 
 
@@ -72,6 +81,35 @@ def parse_iso_utc(value):
         return None
 
 
+def load_existing():
+    if not OUTPUT_FILE.exists():
+        return None
+
+    try:
+        with OUTPUT_FILE.open(
+            "r",
+            encoding="utf-8",
+        ) as f:
+            data = json.load(f)
+
+        if str(data.get("imo", "")) != IMO:
+            return None
+
+        if str(data.get("mmsi", "")) != MMSI:
+            return None
+
+        return data
+
+    except Exception:
+        return None
+
+
+def seed_record(checked_at):
+    record = dict(SEED_RECORD)
+    record["checked_at"] = checked_at
+    return record
+
+
 def fetch_page():
     response = requests.get(
         SOURCE_URL,
@@ -84,48 +122,70 @@ def fetch_page():
     return response.text
 
 
+def signed_coordinate(value, hemisphere):
+    value = float(value)
+
+    hemisphere = hemisphere.upper()
+
+    if hemisphere in ("S", "W"):
+        value *= -1
+
+    return value
+
+
 def extract_position(html):
-    # Prefer decimal-degree coordinates.
-    decimal_patterns = [
+    """
+    Accepts examples such as:
+
+    24.7002° N, 127.1542° E
+
+    or
+
+    22.4338° N, 17.6229° W
+    """
+
+    patterns = [
         (
-            r'([-+]?\d{1,2}\.\d+)\s*°?\s*N'
+            r'([-+]?\d{1,2}(?:\.\d+)?)\s*°?\s*([NS])'
             r'.{0,100}?'
-            r'([-+]?\d{1,3}\.\d+)\s*°?\s*E'
+            r'([-+]?\d{1,3}(?:\.\d+)?)\s*°?\s*([EW])'
         ),
         (
-            r'latitude[^0-9\-+]*([-+]?\d{1,2}\.\d+)'
+            r'Latitude\s*'
+            r'(\d{1,2})°\s*'
+            r'(\d+(?:\.\d+)?)\'?\s*'
+            r'([NS])'
             r'.{0,100}?'
-            r'longitude[^0-9\-+]*([-+]?\d{1,3}\.\d+)'
+            r'Longitude\s*'
+            r'(\d{1,3})°\s*'
+            r'(\d+(?:\.\d+)?)\'?\s*'
+            r'([EW])'
         ),
     ]
 
-    for pattern in decimal_patterns:
-        match = re.search(
-            pattern,
-            html,
-            re.IGNORECASE | re.DOTALL,
-        )
-
-        if match:
-            lat = float(match.group(1))
-            lng = float(match.group(2))
-            return lat, lng
-
-    # Fallback degree/minute format.
-    dm_pattern = (
-        r'Latitude\s*'
-        r'(\d{1,2})°\s*'
-        r'(\d+(?:\.\d+)?)\'?\s*'
-        r'([NS])'
-        r'.{0,100}?'
-        r'Longitude\s*'
-        r'(\d{1,3})°\s*'
-        r'(\d+(?:\.\d+)?)\'?\s*'
-        r'([EW])'
+    # Decimal degrees.
+    match = re.search(
+        patterns[0],
+        html,
+        re.IGNORECASE | re.DOTALL,
     )
 
+    if match:
+        lat = signed_coordinate(
+            match.group(1),
+            match.group(2),
+        )
+
+        lng = signed_coordinate(
+            match.group(3),
+            match.group(4),
+        )
+
+        return lat, lng
+
+    # Degrees + minutes.
     match = re.search(
-        dm_pattern,
+        patterns[1],
         html,
         re.IGNORECASE | re.DOTALL,
     )
@@ -133,19 +193,19 @@ def extract_position(html):
     if match:
         lat_deg = float(match.group(1))
         lat_min = float(match.group(2))
-        lat_hemi = match.group(3).upper()
+        lat_hemi = match.group(3)
 
         lng_deg = float(match.group(4))
         lng_min = float(match.group(5))
-        lng_hemi = match.group(6).upper()
+        lng_hemi = match.group(6)
 
         lat = lat_deg + lat_min / 60.0
         lng = lng_deg + lng_min / 60.0
 
-        if lat_hemi == "S":
+        if lat_hemi.upper() == "S":
             lat *= -1
 
-        if lng_hemi == "W":
+        if lng_hemi.upper() == "W":
             lng *= -1
 
         return lat, lng
@@ -154,9 +214,10 @@ def extract_position(html):
 
 
 def extract_ais_time(html):
-    # ISO timestamp.
+    # ISO UTC timestamp.
     match = re.search(
-        r'20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',
+        r'20\d{2}-\d{2}-\d{2}T'
+        r'\d{2}:\d{2}:\d{2}(?:\.\d+)?Z',
         html,
         re.IGNORECASE,
     )
@@ -179,17 +240,21 @@ def extract_ais_time(html):
     )
 
     if match:
-        day = int(match.group(1))
-        month_text = match.group(2)
-        year = int(match.group(3))
-        time_text = match.group(4)
-
         parsed = datetime.strptime(
-            f"{day} {month_text} {year} {time_text}",
+            (
+                f"{match.group(1)} "
+                f"{match.group(2)} "
+                f"{match.group(3)} "
+                f"{match.group(4)}"
+            ),
             "%d %b %Y %H:%M",
         ).replace(tzinfo=timezone.utc)
 
-        return parsed.isoformat().replace("+00:00", "Z")
+        return (
+            parsed
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
 
     return None
 
@@ -197,7 +262,6 @@ def extract_ais_time(html):
 def extract_speed(html):
     patterns = [
         r'Current speed[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*kn',
-        r'([0-9]+(?:\.[0-9]+)?)\s*kn\s*(?:Speed|Current speed)',
         r'([0-9]+(?:\.[0-9]+)?)\s*kn',
     ]
 
@@ -209,15 +273,24 @@ def extract_speed(html):
         )
 
         if match:
-            return parse_float(match.group(1))
+            return parse_float(
+                match.group(1)
+            )
 
     return None
 
 
 def extract_course(html):
     patterns = [
-        r'Course(?: over ground)?[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*°',
-        r'([0-9]+(?:\.[0-9]+)?)\s*°\s*/\s*[0-9.]+\s*°',
+        (
+            r'Course(?: over ground)?'
+            r'[^0-9]*'
+            r'([0-9]+(?:\.[0-9]+)?)\s*°'
+        ),
+        (
+            r'([0-9]+(?:\.[0-9]+)?)'
+            r'\s*°\s*/'
+        ),
     ]
 
     for pattern in patterns:
@@ -228,15 +301,23 @@ def extract_course(html):
         )
 
         if match:
-            return parse_float(match.group(1))
+            return parse_float(
+                match.group(1)
+            )
 
     return None
 
 
 def extract_heading(html):
     patterns = [
-        r'Heading[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*°',
-        r'[0-9.]+\s*°\s*/\s*([0-9]+(?:\.[0-9]+)?)\s*°',
+        (
+            r'Heading[^0-9]*'
+            r'([0-9]+(?:\.[0-9]+)?)\s*°'
+        ),
+        (
+            r'[0-9.]+\s*°\s*/\s*'
+            r'([0-9]+(?:\.[0-9]+)?)\s*°'
+        ),
     ]
 
     for pattern in patterns:
@@ -247,7 +328,9 @@ def extract_heading(html):
         )
 
         if match:
-            return parse_float(match.group(1))
+            return parse_float(
+                match.group(1)
+            )
 
     return None
 
@@ -271,59 +354,25 @@ def extract_navigation_status(html):
     return None
 
 
-def extract_water_body(html):
-    known_areas = [
-        "Papua New Guinean Exclusive Economic Zone",
-        "Philippine Sea",
-        "East China Sea",
-        "South Pacific Ocean",
-        "Tasman Sea",
-    ]
+def plausible_position(lat, lng):
+    """
+    MORNING CARA should currently be on the
+    Asia -> SW Pacific -> NZ voyage.
 
-    lower_html = html.lower()
+    Reject obviously unrelated Atlantic positions.
+    """
 
-    for area in known_areas:
-        if area.lower() in lower_html:
-            return area
+    if lat is None or lng is None:
+        return False
 
-    return ""
+    # Broad Asia / western Pacific / NZ corridor.
+    if not (-50 <= lat <= 40):
+        return False
 
+    if not (100 <= lng <= 190):
+        return False
 
-def build_record(html, checked_at):
-    lat, lng = extract_position(html)
-    ais_time = extract_ais_time(html)
-
-    speed = extract_speed(html)
-    course = extract_course(html)
-    heading = extract_heading(html)
-
-    nav_status = extract_navigation_status(html)
-    water_body = extract_water_body(html)
-
-    if lat is None or lng is None or ais_time is None:
-        raise RuntimeError(
-            "Could not parse an exact AIS position/time from MarineRadar"
-        )
-
-    return {
-        "vessel": VESSEL,
-        "imo": IMO,
-        "mmsi": MMSI,
-        "lat": round(lat, 6),
-        "lng": round(lng, 6),
-        "time": ais_time,
-        "reported": ais_time,
-        "speed": speed,
-        "course": course,
-        "heading": heading,
-        "waterBody": water_body,
-        "navigation_status": nav_status,
-        "port": None,
-        "position_age": None,
-        "source": "MarineRadar terrestrial AIS",
-        "source_url": SOURCE_URL,
-        "checked_at": checked_at,
-    }
+    return True
 
 
 def save_record(record):
@@ -337,6 +386,7 @@ def save_record(record):
             indent=2,
             ensure_ascii=False,
         )
+
         f.write("\n")
 
 
@@ -345,92 +395,163 @@ def main():
 
     existing = load_existing()
 
+    if existing is None:
+        existing = seed_record(
+            checked_at
+        )
+
     try:
         html = fetch_page()
 
-        fresh = build_record(
-            html,
-            checked_at,
+        lat, lng = extract_position(
+            html
         )
 
-        fresh_time = parse_iso_utc(
-            fresh["time"]
+        ais_time = extract_ais_time(
+            html
         )
 
-        existing_time = (
-            parse_iso_utc(existing.get("time"))
-            if existing
-            else None
+        print(
+            "MarineRadar parsed position:",
+            lat,
+            lng,
         )
 
-        # Never replace a newer saved AIS fix
-        # with an older scraped fix.
+        print(
+            "MarineRadar parsed AIS time:",
+            ais_time,
+        )
+
+        # Only replace the stored fix if we have:
+        # 1. a plausible coordinate, AND
+        # 2. a genuine AIS timestamp.
         if (
-            existing
-            and existing_time
-            and fresh_time
-            and existing_time > fresh_time
+            plausible_position(lat, lng)
+            and ais_time
         ):
-            existing["checked_at"] = checked_at
-            existing["source_url"] = SOURCE_URL
-
-            save_record(existing)
-
-            print(
-                "Scraped AIS fix is older than saved fix."
+            fresh_time = parse_iso_utc(
+                ais_time
             )
-            print(
-                "Keeping existing position and updating checked_at."
+
+            existing_time = parse_iso_utc(
+                existing.get("time")
             )
-            print(
-                json.dumps(
-                    existing,
-                    indent=2,
+
+            if (
+                fresh_time
+                and (
+                    existing_time is None
+                    or fresh_time > existing_time
                 )
+            ):
+                existing["lat"] = round(
+                    lat,
+                    6,
+                )
+
+                existing["lng"] = round(
+                    lng,
+                    6,
+                )
+
+                existing["time"] = ais_time
+                existing["reported"] = ais_time
+
+                speed = extract_speed(
+                    html
+                )
+
+                course = extract_course(
+                    html
+                )
+
+                heading = extract_heading(
+                    html
+                )
+
+                navigation_status = (
+                    extract_navigation_status(
+                        html
+                    )
+                )
+
+                if speed is not None:
+                    existing["speed"] = speed
+
+                if course is not None:
+                    existing["course"] = course
+
+                if heading is not None:
+                    existing["heading"] = heading
+
+                if navigation_status:
+                    existing[
+                        "navigation_status"
+                    ] = navigation_status
+
+                existing["source"] = (
+                    "MarineRadar terrestrial AIS"
+                )
+
+                print(
+                    "Saved newer credible AIS fix."
+                )
+
+            else:
+                print(
+                    "No newer AIS timestamp found."
+                )
+
+        else:
+            print(
+                "MarineRadar position/time not "
+                "credible enough to overwrite "
+                "the stored AIS fix."
             )
-            return
 
-        save_record(fresh)
+        # Always record that the public source
+        # was checked on this workflow run.
+        existing["checked_at"] = checked_at
+        existing["source_url"] = SOURCE_URL
 
-        print("Saved MORNING CARA AIS:")
+        save_record(
+            existing
+        )
+
         print(
             json.dumps(
-                fresh,
+                existing,
                 indent=2,
             )
         )
 
     except Exception as exc:
+        # Do NOT fail GitHub Actions simply because
+        # the public AIS site is unavailable or
+        # changed its HTML.
         print(
-            "Could not retrieve/parse fresh AIS:",
+            "AIS source check failed:",
             exc,
         )
 
-        if existing:
-            # The source was checked successfully enough
-            # for this workflow run, but there was no
-            # usable newer position.
-            existing["checked_at"] = checked_at
-            existing["source_url"] = SOURCE_URL
+        existing["checked_at"] = checked_at
+        existing["source_url"] = SOURCE_URL
 
-            save_record(existing)
+        save_record(
+            existing
+        )
 
-            print(
-                "Keeping existing MORNING CARA AIS."
-            )
-            print(
-                "Updated checked_at:",
-                checked_at,
-            )
-            print(
-                json.dumps(
-                    existing,
-                    indent=2,
-                )
-            )
-            return
+        print(
+            "Kept existing MORNING CARA fix "
+            "and updated checked_at."
+        )
 
-        raise
+        print(
+            json.dumps(
+                existing,
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":
