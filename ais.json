@@ -2,10 +2,10 @@
   "vessel": "MORNING CARA",
   "imo": "9574092",
   "mmsi": "441148000",
-  "lat": 24.7002,
-  "lng": 127.1542,
-  "time": "2026-08-17T01:11:00Z",
-  "reported": "2026-08-17T01:11:00Z",
+  "lat": -23.2726,
+  "lng": 165.1907,
+  "time": "2026-08-26T06:41:00Z",
+  "reported": "2026-08-26T06:41:00Z",
   "speed": 17.6,
   "course": 142.0,
   "heading": 144.0,
@@ -15,5 +15,5 @@
   "position_age": null,
   "source": "MarineRadar terrestrial AIS",
   "source_url": "https://www.marineradar.com/vessel/mmsi-441148000/morning-cara",
-  "checked_at": "2026-08-28T10:18:31.557379Z"
+  "checked_at": "2026-08-28T10:21:56.696619Z"
 }
