@@ -1280,87 +1280,67 @@ async function refreshAIS() {
 
 
     const parsedAISTime =
-      new Date(
-        ais.time
-      );
+  new Date(
+    ais.time
+  );
 
 
-    if (
-      isNaN(
-        parsedAISTime.getTime()
-      )
-    ) {
+if (
+  isNaN(
+    parsedAISTime.getTime()
+  )
+) {
 
-      throw new Error(
-        "Invalid AIS time"
-      );
-    }
+  throw new Error(
+    "Invalid AIS time"
+  );
+}
 
 
-    latestAIS = {
+/* =================================================
+   USE NEWEST POSITION ONLY
+   ================================================= */
 
-      lat:
-        Number(
-          ais.lat
-        ),
+if (
+  latestAIS.time &&
+  parsedAISTime <= latestAIS.time
+) {
 
-      lng:
-        Number(
-          ais.lng
-        ),
+  console.log(
+    "Ignoring older AIS position:",
+    parsedAISTime,
+    "because current position is newer:",
+    latestAIS.time
+  );
 
-      time:
-        parsedAISTime,
+  updateSliderRange();
+  goToday();
+  fitMap();
 
-      reported:
-        ais.reported ||
-        ais.time,
+  return;
+}
 
-      speed:
-        ais.speed === null ||
-        ais.speed === undefined
-          ? null
-          : Number(
-              ais.speed
-            ),
 
-      course:
-        ais.course === null ||
-        ais.course === undefined
-          ? null
-          : Number(
-              ais.course
-            ),
+/* =================================================
+   NEW AIS POSITION IS NEWER — USE IT
+   ================================================= */
 
-      heading:
-        ais.heading === null ||
-        ais.heading === undefined
-          ? null
-          : Number(
-              ais.heading
-            ),
+latestAIS = {
 
-      waterBody:
-        ais.waterBody ||
-        ais.port ||
-        "",
+  lat:
+    Number(
+      ais.lat
+    ),
 
-      navigationStatus:
-        ais.navigation_status ||
-        "",
+  lng:
+    Number(
+      ais.lng
+    ),
 
-      source:
-        ais.source ||
-        "AIS",
+  time:
+    parsedAISTime,
 
-      sourceURL:
-        ais.source_url ||
-        DEFAULT_SOURCE_URL,
-
-      checkedAt:
-        ais.checked_at ||
-        null
-    };
+  
 
 
     currentSourceURL =
