@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -25,17 +25,26 @@ VESSELFINDER_URL = (
     "https://www.vesselfinder.com/vessels/details/9574092"
 )
 
+MARITIME_OPTIMA_URL = (
+    "https://maritimeoptima.com/public/vessels/pages/"
+    "imo:9574092/mmsi:441148000/MORNING_CARA.html"
+)
+
 MARINERADAR_URL = (
     "https://www.marineradar.com/vessel/"
     "mmsi-441148000/morning-cara"
 )
 
 
+# ============================================================
+# HTTP
+# ============================================================
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/131.0 Safari/537.36"
+        "Chrome/131.0.0.0 Safari/537.36"
     ),
     "Accept": (
         "text/html,application/xhtml+xml,application/xml;"
@@ -43,19 +52,20 @@ HEADERS = {
     ),
     "Accept-Language": "en-NZ,en;q=0.9",
     "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
 }
 
 
 # ============================================================
-# OPTIONAL MANUAL FIX
+# MANUAL FALLBACK
 #
-# Normally leave this as None.
+# Leave as None normally.
 #
-# If you have an exact position from another source which the
-# scraper is temporarily failing to obtain, enter it here.
+# If you know an exact AIS position which is newer than all
+# scraped sources, enter it here.
 #
 # IMPORTANT:
-# timestamp MUST be the actual UTC/GMT time of the fix.
+# time MUST be the actual GMT/UTC timestamp of the position.
 #
 # Example:
 #
@@ -66,8 +76,8 @@ HEADERS = {
 #     "source": "Manual AIS fix",
 # }
 #
-# Once an online source produces anything newer, that source
-# automatically wins.
+# The manual fix does NOT permanently override online data.
+# Any newer online fix automatically wins.
 # ============================================================
 
 MANUAL_FIX = None
@@ -81,18 +91,32 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
-def utc_now_iso():
-    return utc_now().isoformat().replace("+00:00", "Z")
+def to_iso_z(dt):
+    if dt is None:
+        return None
+
+    return (
+        dt.astimezone(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def parse_float(value):
-    if value is None:
-        return None
-
     try:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def valid_lat_lng(lat, lng):
+    return (
+        lat is not None
+        and lng is not None
+        and -90 <= lat <= 90
+        and -180 <= lng <= 180
+    )
 
 
 def parse_iso_utc(value):
@@ -116,71 +140,8 @@ def parse_iso_utc(value):
         return None
 
 
-def to_iso_z(dt):
-    if dt is None:
-        return None
-
-    return (
-        dt.astimezone(timezone.utc)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
-
-
-def valid_lat_lng(lat, lng):
-    if lat is None or lng is None:
-        return False
-
-    return (
-        -90 <= lat <= 90
-        and -180 <= lng <= 180
-    )
-
-
 # ============================================================
-# LOAD/SAVE EXISTING AIS.JSON
-# ============================================================
-
-def load_existing():
-    if not OUTPUT_FILE.exists():
-        return None
-
-    try:
-        with OUTPUT_FILE.open(
-            "r",
-            encoding="utf-8",
-        ) as f:
-            data = json.load(f)
-
-        # Prevent accidentally carrying over another ship.
-        if str(data.get("imo", "")) != IMO:
-            return None
-
-        return data
-
-    except Exception as exc:
-        print("Could not read existing ais.json:", exc)
-        return None
-
-
-def save_record(record):
-    with OUTPUT_FILE.open(
-        "w",
-        encoding="utf-8",
-    ) as f:
-
-        json.dump(
-            record,
-            f,
-            indent=2,
-            ensure_ascii=False,
-        )
-
-        f.write("\n")
-
-
-# ============================================================
-# HTTP
+# HTTP FETCH
 # ============================================================
 
 def fetch_page(url):
@@ -196,52 +157,90 @@ def fetch_page(url):
 
 
 # ============================================================
-# GENERIC TIME PARSING
+# AIS.JSON
+# ============================================================
+
+def load_existing():
+    if not OUTPUT_FILE.exists():
+        return None
+
+    try:
+        with OUTPUT_FILE.open(
+            "r",
+            encoding="utf-8",
+        ) as f:
+            data = json.load(f)
+
+        if str(data.get("imo", "")) != IMO:
+            print("Existing ais.json belongs to another vessel.")
+            return None
+
+        return data
+
+    except Exception as exc:
+        print("Could not read existing ais.json:", exc)
+        return None
+
+
+def save_record(record):
+    with OUTPUT_FILE.open(
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(
+            record,
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+        f.write("\n")
+
+
+# ============================================================
+# TIME PARSING
 # ============================================================
 
 def extract_absolute_time(text):
     """
-    Find an actual UTC/GMT timestamp.
+    Recognises things such as:
 
-    Supports things such as:
-
-        2026-08-28T06:50:00Z
-        2026-08-28T06:50:00+00:00
-        28 Aug 2026 06:50 UTC
-        28 Aug 2026 06:50 GMT
-        Aug 28, 2026 06:50 UTC
+      2026-08-28T06:50:00Z
+      2026-08-28T06:50:00+00:00
+      28 Aug 2026 06:50 UTC
+      28 Aug 2026 06:50 GMT
+      Aug 28, 2026 06:50 UTC
     """
 
     # ISO Z
     match = re.search(
-        r'20\d{2}-\d{2}-\d{2}'
+        r'(20\d{2}-\d{2}-\d{2}'
         r'T\d{2}:\d{2}:\d{2}'
-        r'(?:\.\d+)?Z',
+        r'(?:\.\d+)?Z)',
         text,
         re.IGNORECASE,
     )
 
     if match:
-        return parse_iso_utc(match.group(0))
+        return parse_iso_utc(match.group(1))
 
-    # ISO with +00:00
+    # ISO +00:00
     match = re.search(
-        r'20\d{2}-\d{2}-\d{2}'
+        r'(20\d{2}-\d{2}-\d{2}'
         r'T\d{2}:\d{2}:\d{2}'
-        r'(?:\.\d+)?\+00:00',
+        r'(?:\.\d+)?\+00:00)',
         text,
         re.IGNORECASE,
     )
 
     if match:
-        return parse_iso_utc(match.group(0))
+        return parse_iso_utc(match.group(1))
 
-    # 28 Aug 2026 06:50 GMT
+    # 28 Aug 2026 06:50 UTC / GMT
     match = re.search(
         r'(\d{1,2})\s+'
         r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
         r'\s+(20\d{2})'
-        r'.{0,60}?'
+        r'.{0,40}?'
         r'(\d{1,2}:\d{2})'
         r'\s*(?:UTC|GMT)',
         text,
@@ -249,23 +248,27 @@ def extract_absolute_time(text):
     )
 
     if match:
-        dt = datetime.strptime(
-            (
-                f"{match.group(1)} "
-                f"{match.group(2)} "
-                f"{match.group(3)} "
-                f"{match.group(4)}"
-            ),
-            "%d %b %Y %H:%M",
-        )
+        try:
+            dt = datetime.strptime(
+                (
+                    f"{match.group(1)} "
+                    f"{match.group(2)} "
+                    f"{match.group(3)} "
+                    f"{match.group(4)}"
+                ),
+                "%d %b %Y %H:%M",
+            )
 
-        return dt.replace(tzinfo=timezone.utc)
+            return dt.replace(tzinfo=timezone.utc)
 
-    # Aug 28, 2026 06:50 UTC
+        except ValueError:
+            pass
+
+    # Aug 28, 2026 06:50 UTC / GMT
     match = re.search(
         r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
         r'\s+(\d{1,2}),?\s+(20\d{2})'
-        r'.{0,60}?'
+        r'.{0,40}?'
         r'(\d{1,2}:\d{2})'
         r'\s*(?:UTC|GMT)',
         text,
@@ -273,44 +276,40 @@ def extract_absolute_time(text):
     )
 
     if match:
-        dt = datetime.strptime(
-            (
-                f"{match.group(2)} "
-                f"{match.group(1)} "
-                f"{match.group(3)} "
-                f"{match.group(4)}"
-            ),
-            "%d %b %Y %H:%M",
-        )
+        try:
+            dt = datetime.strptime(
+                (
+                    f"{match.group(2)} "
+                    f"{match.group(1)} "
+                    f"{match.group(3)} "
+                    f"{match.group(4)}"
+                ),
+                "%d %b %Y %H:%M",
+            )
 
-        return dt.replace(tzinfo=timezone.utc)
+            return dt.replace(tzinfo=timezone.utc)
+
+        except ValueError:
+            pass
 
     return None
 
-
-# ============================================================
-# RELATIVE TIME
-# ============================================================
 
 def relative_time_to_datetime(text, checked_dt):
     """
     Converts:
 
-       1 min ago
-       13 minutes ago
-       2 hours ago
-       42 hours ago
-
-    into an approximate timestamp.
-
-    We deliberately mark these as approximate later.
+      2 min ago
+      35 minutes ago
+      1 hour ago
+      4 hours ago
     """
 
     match = re.search(
         r'(\d+)\s*'
-        r'(second|seconds|sec|secs|'
-        r'minute|minutes|min|mins|'
-        r'hour|hours|hr|hrs)'
+        r'(seconds?|secs?|'
+        r'minutes?|mins?|'
+        r'hours?|hrs?)'
         r'\s+ago',
         text,
         re.IGNORECASE,
@@ -322,15 +321,13 @@ def relative_time_to_datetime(text, checked_dt):
     amount = int(match.group(1))
     unit = match.group(2).lower()
 
-    from datetime import timedelta
-
-    if unit in ("second", "seconds", "sec", "secs"):
+    if unit.startswith("sec"):
         return checked_dt - timedelta(seconds=amount)
 
-    if unit in ("minute", "minutes", "min", "mins"):
+    if unit.startswith("min"):
         return checked_dt - timedelta(minutes=amount)
 
-    if unit in ("hour", "hours", "hr", "hrs"):
+    if unit.startswith("hour") or unit.startswith("hr"):
         return checked_dt - timedelta(hours=amount)
 
     return None
@@ -340,96 +337,180 @@ def relative_time_to_datetime(text, checked_dt):
 # COORDINATE EXTRACTION
 # ============================================================
 
-def extract_decimal_coordinates(text):
+def decimal_from_degrees_minutes(
+    degrees,
+    minutes,
+    hemisphere,
+):
+    value = float(degrees) + float(minutes) / 60
+
+    if hemisphere.upper() in ("S", "W"):
+        value *= -1
+
+    return value
+
+
+def extract_coordinates(text):
     """
-    Handles common formats such as:
-
-       -34.117220, 173.561701
-
-       34.117220° S, 173.561701° E
-
-       Latitude -34.117220
-       Longitude 173.561701
-
-       "lat":-34.117220,"lon":173.561701
+    Tries several common representations.
     """
 
-    patterns = [
+    # --------------------------------------------------------
+    # Latitude 34° 7.033' S Longitude 173° 33.702' E
+    # --------------------------------------------------------
 
-        # Explicit latitude / longitude
-        (
-            r'latitude'
-            r'[^0-9+\-]{0,30}'
-            r'([-+]?\d{1,2}(?:\.\d+)?)'
-            r'.{0,150}?'
-            r'longitude'
-            r'[^0-9+\-]{0,30}'
-            r'([-+]?\d{1,3}(?:\.\d+)?)'
-        ),
+    match = re.search(
+        r'Latitude\s*'
+        r'(\d{1,2})\s*°\s*'
+        r'(\d+(?:\.\d+)?)'
+        r'\s*[\'′]?\s*([NS])'
+        r'.{0,150}?'
+        r'Longitude\s*'
+        r'(\d{1,3})\s*°\s*'
+        r'(\d+(?:\.\d+)?)'
+        r'\s*[\'′]?\s*([EW])',
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
 
-        # JSON lat/lon
-        (
-            r'["\']?lat(?:itude)?["\']?'
-            r'\s*[:=]\s*'
-            r'["\']?'
-            r'([-+]?\d{1,2}(?:\.\d+)?)'
-            r'["\']?'
-            r'.{0,100}?'
-            r'["\']?(?:lon|lng|longitude)["\']?'
-            r'\s*[:=]\s*'
-            r'["\']?'
-            r'([-+]?\d{1,3}(?:\.\d+)?)'
-        ),
-
-        # Plain signed pair
-        (
-            r'([-+]?\d{1,2}\.\d{3,})'
-            r'\s*[,;/]\s*'
-            r'([-+]?\d{1,3}\.\d{3,})'
-        ),
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE | re.DOTALL,
+    if match:
+        lat = decimal_from_degrees_minutes(
+            match.group(1),
+            match.group(2),
+            match.group(3),
         )
 
-        if not match:
-            continue
+        lng = decimal_from_degrees_minutes(
+            match.group(4),
+            match.group(5),
+            match.group(6),
+        )
 
+        if valid_lat_lng(lat, lng):
+            return lat, lng
+
+    # --------------------------------------------------------
+    # Latitude -34.117220 Longitude 173.561701
+    # --------------------------------------------------------
+
+    match = re.search(
+        r'Latitude'
+        r'[^0-9+\-]{0,30}'
+        r'([-+]?\d{1,2}(?:\.\d+)?)'
+        r'.{0,100}?'
+        r'Longitude'
+        r'[^0-9+\-]{0,30}'
+        r'([-+]?\d{1,3}(?:\.\d+)?)',
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    if match:
         lat = parse_float(match.group(1))
         lng = parse_float(match.group(2))
 
         if valid_lat_lng(lat, lng):
             return lat, lng
 
-    # Hemisphere format
+    # --------------------------------------------------------
+    # 34.117 S, 173.561 E
+    # --------------------------------------------------------
+
     match = re.search(
         r'(\d{1,2}(?:\.\d+)?)'
         r'\s*°?\s*([NS])'
-        r'.{0,100}?'
+        r'\s*[,;/]?\s*'
         r'(\d{1,3}(?:\.\d+)?)'
         r'\s*°?\s*([EW])',
+        text,
+        re.IGNORECASE,
+    )
+
+    if match:
+        lat = float(match.group(1))
+        lng = float(match.group(3))
+
+        if match.group(2).upper() == "S":
+            lat *= -1
+
+        if match.group(4).upper() == "W":
+            lng *= -1
+
+        if valid_lat_lng(lat, lng):
+            return lat, lng
+
+    # --------------------------------------------------------
+    # JSON: lat/lon
+    # --------------------------------------------------------
+
+    json_patterns = [
+        (
+            r'["\']lat["\']\s*:\s*'
+            r'["\']?([-+]?\d{1,2}\.\d+)["\']?'
+            r'.{0,100}?'
+            r'["\'](?:lon|lng)["\']\s*:\s*'
+            r'["\']?([-+]?\d{1,3}\.\d+)["\']?'
+        ),
+        (
+            r'["\']latitude["\']\s*:\s*'
+            r'["\']?([-+]?\d{1,2}\.\d+)["\']?'
+            r'.{0,100}?'
+            r'["\']longitude["\']\s*:\s*'
+            r'["\']?([-+]?\d{1,3}\.\d+)["\']?'
+        ),
+    ]
+
+    for pattern in json_patterns:
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if match:
+            lat = parse_float(match.group(1))
+            lng = parse_float(match.group(2))
+
+            if valid_lat_lng(lat, lng):
+                return lat, lng
+
+    # --------------------------------------------------------
+    # JS: lat = x, lon = y
+    # --------------------------------------------------------
+
+    match = re.search(
+        r'\blat(?:itude)?\s*[=:]\s*'
+        r'["\']?([-+]?\d{1,2}\.\d+)'
+        r'.{0,100}?'
+        r'\b(?:lon|lng|longitude)\s*[=:]\s*'
+        r'["\']?([-+]?\d{1,3}\.\d+)',
         text,
         re.IGNORECASE | re.DOTALL,
     )
 
     if match:
+        lat = parse_float(match.group(1))
+        lng = parse_float(match.group(2))
 
-        lat = float(match.group(1))
-        lat_hemi = match.group(2).upper()
+        if valid_lat_lng(lat, lng):
+            return lat, lng
 
-        lng = float(match.group(3))
-        lng_hemi = match.group(4).upper()
+    # --------------------------------------------------------
+    # Plain decimal pair.
+    #
+    # Require 4+ decimal places to reduce accidental matches.
+    # --------------------------------------------------------
 
-        if lat_hemi == "S":
-            lat *= -1
+    matches = re.findall(
+        r'([-+]?\d{1,2}\.\d{4,})'
+        r'\s*[,;/]\s*'
+        r'([-+]?\d{1,3}\.\d{4,})',
+        text,
+    )
 
-        if lng_hemi == "W":
-            lng *= -1
+    for lat_text, lng_text in matches:
+        lat = parse_float(lat_text)
+        lng = parse_float(lng_text)
 
         if valid_lat_lng(lat, lng):
             return lat, lng
@@ -437,89 +518,24 @@ def extract_decimal_coordinates(text):
     return None, None
 
 
-def extract_degree_minute_coordinates(text):
-    """
-    Example:
-
-       Latitude 34° 7.033' S
-       Longitude 173° 33.702' E
-    """
-
-    pattern = (
-        r'Latitude\s*'
-        r'(\d{1,2})°\s*'
-        r'(\d+(?:\.\d+)?)'
-        r'[\'′]?\s*'
-        r'([NS])'
-        r'.{0,150}?'
-        r'Longitude\s*'
-        r'(\d{1,3})°\s*'
-        r'(\d+(?:\.\d+)?)'
-        r'[\'′]?\s*'
-        r'([EW])'
-    )
-
-    match = re.search(
-        pattern,
-        text,
-        re.IGNORECASE | re.DOTALL,
-    )
-
-    if not match:
-        return None, None
-
-    lat_deg = float(match.group(1))
-    lat_min = float(match.group(2))
-    lat_hemi = match.group(3).upper()
-
-    lng_deg = float(match.group(4))
-    lng_min = float(match.group(5))
-    lng_hemi = match.group(6).upper()
-
-    lat = lat_deg + (lat_min / 60.0)
-    lng = lng_deg + (lng_min / 60.0)
-
-    if lat_hemi == "S":
-        lat *= -1
-
-    if lng_hemi == "W":
-        lng *= -1
-
-    if not valid_lat_lng(lat, lng):
-        return None, None
-
-    return lat, lng
-
-
-def extract_coordinates(text):
-
-    lat, lng = extract_degree_minute_coordinates(text)
-
-    if valid_lat_lng(lat, lng):
-        return lat, lng
-
-    return extract_decimal_coordinates(text)
-
-
 # ============================================================
-# SPEED / COURSE
+# SPEED / COURSE / HEADING
 # ============================================================
 
 def extract_speed(text):
-
     patterns = [
-        r'(?:current\s+)?speed'
+        r'speed'
         r'[^0-9]{0,30}'
-        r'([0-9]+(?:\.[0-9]+)?)\s*(?:kn|knots)',
+        r'([0-9]+(?:\.[0-9]+)?)'
+        r'\s*(?:kn|kts|knots)',
 
-        r'sailing\s+at\s+(?:a\s+speed\s+of\s+)?'
-        r'([0-9]+(?:\.[0-9]+)?)\s*(?:kn|knots)',
-
-        r'([0-9]+(?:\.[0-9]+)?)\s*(?:kn|knots)',
+        r'sailing\s+at\s+'
+        r'(?:a\s+speed\s+of\s+)?'
+        r'([0-9]+(?:\.[0-9]+)?)'
+        r'\s*(?:kn|kts|knots)',
     ]
 
     for pattern in patterns:
-
         match = re.search(
             pattern,
             text,
@@ -533,20 +549,18 @@ def extract_speed(text):
 
 
 def extract_course(text):
-
     patterns = [
-        r'course(?:\s+over\s+ground)?'
+        r'course'
         r'[^0-9]{0,30}'
         r'([0-9]+(?:\.[0-9]+)?)\s*°',
 
-        r'["\']?(?:cog|course)["\']?'
+        r'["\']cog["\']'
         r'\s*[:=]\s*'
         r'["\']?'
         r'([0-9]+(?:\.[0-9]+)?)',
     ]
 
     for pattern in patterns:
-
         match = re.search(
             pattern,
             text,
@@ -554,35 +568,41 @@ def extract_course(text):
         )
 
         if match:
-            return parse_float(match.group(1))
+            value = parse_float(match.group(1))
+
+            if value is not None and 0 <= value <= 360:
+                return value
 
     return None
 
 
 def extract_heading(text):
-
     match = re.search(
         r'heading'
         r'[^0-9]{0,30}'
-        r'([0-9]+(?:\.[0-9]+)?)\s*°',
+        r'([0-9]+(?:\.[0-9]+)?)'
+        r'\s*°',
         text,
         re.IGNORECASE | re.DOTALL,
     )
 
     if match:
-        return parse_float(match.group(1))
+        value = parse_float(match.group(1))
+
+        if value is not None and 0 <= value <= 360:
+            return value
 
     return None
 
 
 # ============================================================
-# NAV STATUS
+# NAVIGATION STATUS
 # ============================================================
 
 def extract_navigation_status(text):
-
     statuses = [
         "Under way using engine",
+        "Under way",
         "Moored",
         "At anchor",
         "Not under command",
@@ -590,133 +610,138 @@ def extract_navigation_status(text):
         "Constrained by her draught",
     ]
 
-    lower = text.lower()
+    text_lower = text.lower()
 
     for status in statuses:
-
-        if status.lower() in lower:
+        if status.lower() in text_lower:
             return status
 
     return None
 
 
 # ============================================================
-# SOURCE: MARINERADAR
+# SOURCE-SPECIFIC TIMESTAMP EXTRACTION
 # ============================================================
 
-def get_marineradar(checked_dt):
+def extract_vesselfinder_time(
+    text,
+    checked_dt,
+):
+    """
+    VesselFinder often displays:
 
-    print()
-    print("Checking MarineRadar...")
+       Position received | 2 min ago
+    """
 
-    try:
-        html = fetch_page(MARINERADAR_URL)
+    match = re.search(
+        r'Position\s+received'
+        r'.{0,120}?'
+        r'(\d+\s*'
+        r'(?:seconds?|secs?|'
+        r'minutes?|mins?|'
+        r'hours?|hrs?)'
+        r'\s+ago)',
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
 
-        lat, lng = extract_coordinates(html)
-        fix_time = extract_absolute_time(html)
-
-        if not valid_lat_lng(lat, lng):
-            raise RuntimeError(
-                "could not extract coordinates"
-            )
-
-        if fix_time is None:
-            raise RuntimeError(
-                "could not extract an exact AIS timestamp"
-            )
-
-        record = {
-            "lat": lat,
-            "lng": lng,
-            "time_dt": fix_time,
-            "speed": extract_speed(html),
-            "course": extract_course(html),
-            "heading": extract_heading(html),
-            "navigation_status":
-                extract_navigation_status(html),
-            "waterBody": "",
-            "source": "MarineRadar terrestrial AIS",
-            "source_url": MARINERADAR_URL,
-            "approximate_time": False,
-        }
-
-        print(
-            "MarineRadar:",
-            round(lat, 6),
-            round(lng, 6),
-            to_iso_z(fix_time),
+    if match:
+        return (
+            relative_time_to_datetime(
+                match.group(1),
+                checked_dt,
+            ),
+            True,
         )
 
-        return record
+    exact = extract_absolute_time(text)
 
-    except Exception as exc:
+    if exact:
+        return exact, False
 
-        print(
-            "MarineRadar unavailable/unusable:",
-            exc,
+    return None, False
+
+
+def extract_marineradar_time(text):
+    """
+    Prefer MarineRadar's actual AIS last-updated timestamp.
+    """
+
+    patterns = [
+        (
+            r'AIS\s+last\s+updated'
+            r'.{0,40}?'
+            r'(20\d{2}-\d{2}-\d{2}'
+            r'T\d{2}:\d{2}:\d{2}Z)'
+        ),
+
+        (
+            r'most\s+recent\s+report'
+            r'.{0,250}?'
+            r'(\d{1,2}\s+'
+            r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+            r'\s+20\d{2}'
+            r'.{0,30}?'
+            r'\d{1,2}:\d{2}'
+            r'\s*(?:UTC|GMT))'
+        ),
+    ]
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE | re.DOTALL,
         )
 
-        return None
+        if match:
+            parsed = extract_absolute_time(
+                match.group(1)
+            )
+
+            if parsed:
+                return parsed
+
+    return extract_absolute_time(text)
 
 
 # ============================================================
-# SOURCE: VESSELFINDER
+# VESSELFINDER
 # ============================================================
 
 def get_vesselfinder(checked_dt):
-
     print()
     print("Checking VesselFinder...")
 
     try:
-        html = fetch_page(VESSELFINDER_URL)
+        html = fetch_page(
+            VESSELFINDER_URL
+        )
 
-        lat, lng = extract_coordinates(html)
+        lat, lng = extract_coordinates(
+            html
+        )
 
         if not valid_lat_lng(lat, lng):
             raise RuntimeError(
-                "position coordinates are not exposed "
-                "in the public HTML"
+                "fresh position exists but exact "
+                "coordinates were not exposed in "
+                "the downloaded page"
             )
 
-        # Prefer an exact timestamp.
-        fix_time = extract_absolute_time(html)
-        approximate = False
-
-        # VesselFinder sometimes exposes only:
-        # "Position received 42 hours ago"
-        #
-        # This is less precise but still useful for
-        # comparison when an exact timestamp isn't present.
-        if fix_time is None:
-
-            received_match = re.search(
-                r'Position\s+received'
-                r'.{0,100}?'
-                r'(\d+\s*'
-                r'(?:seconds?|secs?|'
-                r'minutes?|mins?|'
-                r'hours?|hrs?)'
-                r'\s+ago)',
+        fix_time, approximate = (
+            extract_vesselfinder_time(
                 html,
-                re.IGNORECASE | re.DOTALL,
+                checked_dt,
             )
-
-            if received_match:
-
-                fix_time = relative_time_to_datetime(
-                    received_match.group(1),
-                    checked_dt,
-                )
-
-                approximate = True
+        )
 
         if fix_time is None:
             raise RuntimeError(
-                "could not determine position timestamp"
+                "position timestamp not found"
             )
 
-        record = {
+        result = {
             "lat": lat,
             "lng": lng,
             "time_dt": fix_time,
@@ -725,26 +750,24 @@ def get_vesselfinder(checked_dt):
             "heading": extract_heading(html),
             "navigation_status":
                 extract_navigation_status(html),
-            "waterBody": "",
             "source": "VesselFinder AIS",
             "source_url": VESSELFINDER_URL,
-            "approximate_time": approximate,
+            "timestamp_approximate":
+                approximate,
         }
 
         print(
-            "VesselFinder:",
+            "VesselFinder candidate:",
             round(lat, 6),
             round(lng, 6),
             to_iso_z(fix_time),
-            "(approx)" if approximate else "",
         )
 
-        return record
+        return result
 
     except Exception as exc:
-
         print(
-            "VesselFinder unavailable/unusable:",
+            "VesselFinder skipped:",
             exc,
         )
 
@@ -752,48 +775,228 @@ def get_vesselfinder(checked_dt):
 
 
 # ============================================================
-# OPTIONAL MANUAL FIX
+# MARINERADAR
+# ============================================================
+
+def get_marineradar():
+    print()
+    print("Checking MarineRadar...")
+
+    try:
+        html = fetch_page(
+            MARINERADAR_URL
+        )
+
+        lat, lng = extract_coordinates(
+            html
+        )
+
+        if not valid_lat_lng(lat, lng):
+            raise RuntimeError(
+                "coordinates not found"
+            )
+
+        fix_time = extract_marineradar_time(
+            html
+        )
+
+        if fix_time is None:
+            raise RuntimeError(
+                "exact AIS timestamp not found"
+            )
+
+        result = {
+            "lat": lat,
+            "lng": lng,
+            "time_dt": fix_time,
+            "speed": extract_speed(html),
+            "course": extract_course(html),
+            "heading": extract_heading(html),
+            "navigation_status":
+                extract_navigation_status(html),
+            "source":
+                "MarineRadar terrestrial AIS",
+            "source_url":
+                MARINERADAR_URL,
+            "timestamp_approximate":
+                False,
+        }
+
+        print(
+            "MarineRadar candidate:",
+            round(lat, 6),
+            round(lng, 6),
+            to_iso_z(fix_time),
+        )
+
+        return result
+
+    except Exception as exc:
+        print(
+            "MarineRadar skipped:",
+            exc,
+        )
+
+        return None
+
+
+# ============================================================
+# MARITIME OPTIMA
+#
+# Public page is useful for confirming freshness/location area
+# but generally does NOT expose exact lat/lng.
+#
+# It therefore does not create a candidate unless coordinates
+# happen to be present in the returned HTML.
+# ============================================================
+
+def get_maritime_optima(
+    checked_dt,
+):
+    print()
+    print("Checking Maritime Optima...")
+
+    try:
+        html = fetch_page(
+            MARITIME_OPTIMA_URL
+        )
+
+        lat, lng = extract_coordinates(
+            html
+        )
+
+        match = re.search(
+            r'AIS\s+data\s+received\s+'
+            r'(\d+\s*'
+            r'(?:seconds?|secs?|'
+            r'minutes?|mins?|'
+            r'hours?|hrs?)'
+            r'\s+ago)',
+            html,
+            re.IGNORECASE,
+        )
+
+        fix_time = None
+
+        if match:
+            fix_time = (
+                relative_time_to_datetime(
+                    match.group(1),
+                    checked_dt,
+                )
+            )
+
+        location_text = None
+
+        location_match = re.search(
+            r'is\s+currently\s+in\s+'
+            r'(.*?),\s*based\s+on\s+AIS',
+            html,
+            re.IGNORECASE,
+        )
+
+        if location_match:
+            location_text = (
+                re.sub(
+                    r'<[^>]+>',
+                    '',
+                    location_match.group(1),
+                )
+                .strip()
+            )
+
+        print(
+            "Maritime Optima reports:",
+            location_text or "location unknown",
+            to_iso_z(fix_time)
+            if fix_time
+            else "timestamp unavailable",
+        )
+
+        if not valid_lat_lng(lat, lng):
+            print(
+                "Maritime Optima has no public "
+                "exact coordinates; using it only "
+                "as corroboration."
+            )
+            return None
+
+        if fix_time is None:
+            return None
+
+        return {
+            "lat": lat,
+            "lng": lng,
+            "time_dt": fix_time,
+            "speed": extract_speed(html),
+            "course": extract_course(html),
+            "heading": extract_heading(html),
+            "navigation_status":
+                extract_navigation_status(html),
+            "source":
+                "Maritime Optima AIS",
+            "source_url":
+                MARITIME_OPTIMA_URL,
+            "timestamp_approximate":
+                True,
+        }
+
+    except Exception as exc:
+        print(
+            "Maritime Optima skipped:",
+            exc,
+        )
+
+        return None
+
+
+# ============================================================
+# MANUAL FIX
 # ============================================================
 
 def get_manual_fix():
-
     if not MANUAL_FIX:
         return None
 
-    try:
+    print()
+    print("Checking manual AIS candidate...")
 
-        lat = float(MANUAL_FIX["lat"])
-        lng = float(MANUAL_FIX["lng"])
+    try:
+        lat = float(
+            MANUAL_FIX["lat"]
+        )
+
+        lng = float(
+            MANUAL_FIX["lng"]
+        )
 
         fix_time = parse_iso_utc(
             MANUAL_FIX["time"]
         )
 
         if not valid_lat_lng(lat, lng):
-            raise ValueError(
-                "invalid latitude/longitude"
+            raise RuntimeError(
+                "invalid coordinates"
             )
 
         if fix_time is None:
-            raise ValueError(
-                "invalid manual timestamp"
+            raise RuntimeError(
+                "invalid timestamp"
             )
 
-        record = {
+        return {
             "lat": lat,
             "lng": lng,
             "time_dt": fix_time,
-            "speed": MANUAL_FIX.get("speed"),
-            "course": MANUAL_FIX.get("course"),
-            "heading": MANUAL_FIX.get("heading"),
+            "speed":
+                MANUAL_FIX.get("speed"),
+            "course":
+                MANUAL_FIX.get("course"),
+            "heading":
+                MANUAL_FIX.get("heading"),
             "navigation_status":
                 MANUAL_FIX.get(
                     "navigation_status"
-                ),
-            "waterBody":
-                MANUAL_FIX.get(
-                    "waterBody",
-                    "",
                 ),
             "source":
                 MANUAL_FIX.get(
@@ -805,23 +1008,13 @@ def get_manual_fix():
                     "source_url",
                     "",
                 ),
-            "approximate_time": False,
+            "timestamp_approximate":
+                False,
         }
 
-        print()
-        print(
-            "Manual candidate:",
-            lat,
-            lng,
-            to_iso_z(fix_time),
-        )
-
-        return record
-
     except Exception as exc:
-
         print(
-            "Manual fix ignored:",
+            "Manual candidate invalid:",
             exc,
         )
 
@@ -829,59 +1022,76 @@ def get_manual_fix():
 
 
 # ============================================================
-# SANITY CHECK
+# VOYAGE SANITY CHECK
+#
+# MORNING CARA is currently on Shanghai -> Auckland.
+#
+# This broad box protects you from garbage fixes on a totally
+# different side of the planet.
+#
+# It allows:
+#
+#    East Asia
+#    Western Pacific
+#    South Pacific
+#    New Zealand
+#
+# including either side of the international date line.
+#
+# Once the Auckland voyage finishes, you can loosen/remove
+# this if you want to track the next voyage.
 # ============================================================
 
-def plausible_for_current_voyage(candidate):
-    """
-    Basic protection against a completely erroneous AIS result.
-
-    MORNING CARA is currently approaching New Zealand from
-    Asia across the Pacific.
-
-    For now, reject clearly impossible Atlantic/African/
-    American positions.
-
-    This deliberately allows a broad area:
-       latitude  -60 to +45
-       longitude 100E to 180E
-       OR western Pacific across the dateline to 180W
-
-    Remove/adjust this after the Auckland voyage if you use
-    this tracker for a future voyage.
-    """
-
+def plausible_for_current_voyage(
+    candidate,
+):
     lat = candidate["lat"]
     lng = candidate["lng"]
 
     if not valid_lat_lng(lat, lng):
         return False
 
-    # Broad Asia -> South Pacific -> NZ corridor.
-    in_latitude = -60 <= lat <= 45
+    if not (-60 <= lat <= 45):
+        return False
 
-    # 100E through 180E
-    east_pacific = 100 <= lng <= 180
+    # 100E -> date line
+    if 100 <= lng <= 180:
+        return True
 
-    # Immediately east of the international date line.
-    west_longitudes = -180 <= lng <= -150
+    # immediately east of date line
+    if -180 <= lng <= -140:
+        return True
+
+    return False
+
+
+# ============================================================
+# CANDIDATE AGE PROTECTION
+# ============================================================
+
+def candidate_not_in_future(
+    candidate,
+    now,
+):
+    """
+    Permit a little clock skew but reject absurd future fixes.
+    """
 
     return (
-        in_latitude
-        and (
-            east_pacific
-            or west_longitudes
-        )
+        candidate["time_dt"]
+        <= now + timedelta(minutes=10)
     )
 
 
 # ============================================================
-# BUILD FINAL JSON RECORD
+# OUTPUT RECORD
 # ============================================================
 
-def build_output(candidate, checked_at):
-
-    fix_time = to_iso_z(
+def build_output(
+    candidate,
+    checked_at,
+):
+    fix_iso = to_iso_z(
         candidate["time_dt"]
     )
 
@@ -900,8 +1110,8 @@ def build_output(candidate, checked_at):
             6,
         ),
 
-        "time": fix_time,
-        "reported": fix_time,
+        "time": fix_iso,
+        "reported": fix_iso,
 
         "speed":
             candidate.get("speed"),
@@ -912,20 +1122,18 @@ def build_output(candidate, checked_at):
         "heading":
             candidate.get("heading"),
 
+        "navigation_status":
+            candidate.get(
+                "navigation_status"
+            ),
+
         "waterBody":
             candidate.get(
                 "waterBody",
                 "",
             ),
 
-        "navigation_status":
-            candidate.get(
-                "navigation_status"
-            ),
-
         "port": None,
-
-        "position_age": None,
 
         "source":
             candidate["source"],
@@ -938,11 +1146,12 @@ def build_output(candidate, checked_at):
 
         "timestamp_approximate":
             candidate.get(
-                "approximate_time",
+                "timestamp_approximate",
                 False,
             ),
 
-        "checked_at": checked_at,
+        "checked_at":
+            checked_at,
     }
 
 
@@ -951,92 +1160,108 @@ def build_output(candidate, checked_at):
 # ============================================================
 
 def main():
-
     checked_dt = utc_now()
-    checked_at = to_iso_z(checked_dt)
+    checked_at = to_iso_z(
+        checked_dt
+    )
 
-    print("=" * 60)
-    print(VESSEL, "AIS update")
+    print("=" * 65)
+    print(VESSEL)
+    print("IMO:", IMO)
+    print("MMSI:", MMSI)
     print("Checked:", checked_at)
-    print("=" * 60)
+    print("=" * 65)
 
     existing = load_existing()
 
     candidates = []
 
     # --------------------------------------------------------
-    # ONLINE SOURCES
+    # FETCH ALL SOURCES
     # --------------------------------------------------------
 
-    vessel_finder = get_vesselfinder(
-        checked_dt
-    )
+    source_functions = [
+        lambda: get_vesselfinder(
+            checked_dt
+        ),
+        lambda: get_maritime_optima(
+            checked_dt
+        ),
+        get_marineradar,
+        get_manual_fix,
+    ]
 
-    if vessel_finder:
-        candidates.append(
-            vessel_finder
-        )
+    for source_function in source_functions:
+        try:
+            candidate = (
+                source_function()
+            )
 
-    marine_radar = get_marineradar(
-        checked_dt
-    )
+            if candidate:
+                candidates.append(
+                    candidate
+                )
 
-    if marine_radar:
-        candidates.append(
-            marine_radar
-        )
+        except Exception as exc:
+            print(
+                "Unexpected source error:",
+                exc,
+            )
 
     # --------------------------------------------------------
-    # OPTIONAL MANUAL CANDIDATE
-    # --------------------------------------------------------
-
-    manual = get_manual_fix()
-
-    if manual:
-        candidates.append(
-            manual
-        )
-
-    # --------------------------------------------------------
-    # REMOVE IMPOSSIBLE / BAD POSITIONS
+    # VALIDATE CANDIDATES
     # --------------------------------------------------------
 
     valid_candidates = []
 
     for candidate in candidates:
+        source = candidate["source"]
 
-        if plausible_for_current_voyage(
+        if not candidate_not_in_future(
+            candidate,
+            checked_dt,
+        ):
+            print()
+            print(
+                "REJECTED future timestamp:",
+                source,
+                to_iso_z(
+                    candidate["time_dt"]
+                ),
+            )
+            continue
+
+        if not plausible_for_current_voyage(
             candidate
         ):
-            valid_candidates.append(
-                candidate
-            )
-
-        else:
             print()
             print(
                 "REJECTED implausible position:",
-                candidate["source"],
+                source,
                 candidate["lat"],
                 candidate["lng"],
                 to_iso_z(
                     candidate["time_dt"]
                 ),
             )
+            continue
+
+        valid_candidates.append(
+            candidate
+        )
 
     # --------------------------------------------------------
-    # IF NOTHING FOUND
+    # NO VALID SCRAPED POSITIONS
     # --------------------------------------------------------
 
     if not valid_candidates:
-
         print()
         print(
-            "No valid new AIS candidates."
+            "No valid fresh AIS candidate "
+            "was obtained."
         )
 
         if existing:
-
             existing["checked_at"] = (
                 checked_at
             )
@@ -1044,25 +1269,65 @@ def main():
             save_record(existing)
 
             print(
-                "Kept existing position:",
+                "Existing AIS position retained:"
+            )
+
+            print(
                 existing.get("lat"),
                 existing.get("lng"),
                 existing.get("time"),
             )
 
-            print(
-                "Updated checked_at only."
-            )
-
             return
 
         raise RuntimeError(
-            "No valid AIS position available "
-            "and there is no existing ais.json"
+            "No AIS position could be "
+            "obtained and ais.json does "
+            "not already exist."
         )
 
     # --------------------------------------------------------
-    # NEWEST SOURCE WINS
+    # SHOW ALL VALID CANDIDATES
+    # --------------------------------------------------------
+
+    print()
+    print("=" * 65)
+    print("VALID AIS CANDIDATES")
+    print("=" * 65)
+
+    for candidate in sorted(
+        valid_candidates,
+        key=lambda x: x["time_dt"],
+        reverse=True,
+    ):
+        print(
+            candidate["source"],
+            "|",
+            round(
+                candidate["lat"],
+                6,
+            ),
+            round(
+                candidate["lng"],
+                6,
+            ),
+            "|",
+            to_iso_z(
+                candidate["time_dt"]
+            ),
+            "| approx:"
+            if candidate.get(
+                "timestamp_approximate"
+            )
+            else "| exact:",
+            candidate.get(
+                "timestamp_approximate",
+                False,
+            ),
+        )
+
+    # --------------------------------------------------------
+    # NEWEST TIMESTAMP WINS
     # --------------------------------------------------------
 
     newest = max(
@@ -1071,7 +1336,40 @@ def main():
             item["time_dt"],
     )
 
-    newest_time = newest["time_dt"]
+    newest_time = (
+        newest["time_dt"]
+    )
+
+    print()
+    print("=" * 65)
+
+    print(
+        "WINNER:",
+        newest["source"],
+    )
+
+    print(
+        "POSITION:",
+        round(
+            newest["lat"],
+            6,
+        ),
+        round(
+            newest["lng"],
+            6,
+        ),
+    )
+
+    print(
+        "TIME:",
+        to_iso_z(
+            newest_time
+        ),
+    )
+
+    # --------------------------------------------------------
+    # CHECK AGAINST EXISTING AIS.JSON
+    # --------------------------------------------------------
 
     existing_time = None
 
@@ -1080,67 +1378,45 @@ def main():
             existing.get("time")
         )
 
-    print()
-    print("-" * 60)
-
-    print(
-        "Best candidate:",
-        newest["source"],
-    )
-
-    print(
-        "Position:",
-        round(newest["lat"], 6),
-        round(newest["lng"], 6),
-    )
-
-    print(
-        "AIS time:",
-        to_iso_z(newest_time),
-    )
-
-    # --------------------------------------------------------
-    # ONLY REPLACE POSITION IF NEWER
-    # --------------------------------------------------------
-
     if (
         existing_time is not None
         and newest_time <= existing_time
     ):
-
         print()
         print(
-            "Candidate is not newer than "
-            "existing ais.json."
+            "Best scraped candidate is "
+            "not newer than ais.json."
         )
 
         print(
             "Existing:",
-            to_iso_z(existing_time),
+            to_iso_z(
+                existing_time
+            ),
         )
 
         print(
             "Candidate:",
-            to_iso_z(newest_time),
+            to_iso_z(
+                newest_time
+            ),
         )
 
-        # Important:
-        # update the check time without
-        # replacing the good existing fix.
         existing["checked_at"] = (
             checked_at
         )
 
         save_record(existing)
 
+        print()
         print(
-            "Kept existing AIS position."
+            "Kept existing position."
         )
 
         return
 
     # --------------------------------------------------------
-    # SAVE NEW FIX
+    # SAVE NEW POSITION
     # --------------------------------------------------------
 
     record = build_output(
@@ -1151,9 +1427,9 @@ def main():
     save_record(record)
 
     print()
-    print(
-        "NEW AIS FIX SAVED"
-    )
+    print("=" * 65)
+    print("NEW AIS POSITION SAVED")
+    print("=" * 65)
 
     print(
         json.dumps(
