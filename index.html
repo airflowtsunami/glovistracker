@@ -449,16 +449,16 @@ const aisIcon =
    ================================================= */
 
 let latestAIS = {
-  lat: -34.117220,
-  lng: 173.561701,
-  time: new Date("2026-08-28T07:00:00Z"),
-  reported: "2026-08-28T07:00:00Z",
-  speed: 16.0,
+  lat: 24.7002,
+  lng: 127.1542,
+  time: new Date("2026-08-17T01:11:00Z"),
+  reported: "2026-08-17T01:11:00Z",
+  speed: 17.6,
   course: 142,
   heading: 144,
   waterBody: "East China Sea",
   navigationStatus: "Under way using engine",
-  source: "Vesselfinder.com IMO:9574092",
+  source: "MarineRadar terrestrial AIS",
   sourceURL: DEFAULT_SOURCE_URL,
   checkedAt: null
 };
@@ -1280,67 +1280,87 @@ async function refreshAIS() {
 
 
     const parsedAISTime =
-  new Date(
-    ais.time
-  );
+      new Date(
+        ais.time
+      );
 
 
-if (
-  isNaN(
-    parsedAISTime.getTime()
-  )
-) {
+    if (
+      isNaN(
+        parsedAISTime.getTime()
+      )
+    ) {
 
-  throw new Error(
-    "Invalid AIS time"
-  );
-}
-
-
-/* =================================================
-   USE NEWEST POSITION ONLY
-   ================================================= */
-
-if (
-  latestAIS.time &&
-  parsedAISTime <= latestAIS.time
-) {
-
-  console.log(
-    "Ignoring older AIS position:",
-    parsedAISTime,
-    "because current position is newer:",
-    latestAIS.time
-  );
-
-  updateSliderRange();
-  goToday();
-  fitMap();
-
-  return;
-}
+      throw new Error(
+        "Invalid AIS time"
+      );
+    }
 
 
-/* =================================================
-   NEW AIS POSITION IS NEWER — USE IT
-   ================================================= */
+    latestAIS = {
 
-latestAIS = {
+      lat:
+        Number(
+          ais.lat
+        ),
 
-  lat:
-    Number(
-      ais.lat
-    ),
+      lng:
+        Number(
+          ais.lng
+        ),
 
-  lng:
-    Number(
-      ais.lng
-    ),
+      time:
+        parsedAISTime,
 
-  time:
-    parsedAISTime,
+      reported:
+        ais.reported ||
+        ais.time,
 
-  
+      speed:
+        ais.speed === null ||
+        ais.speed === undefined
+          ? null
+          : Number(
+              ais.speed
+            ),
+
+      course:
+        ais.course === null ||
+        ais.course === undefined
+          ? null
+          : Number(
+              ais.course
+            ),
+
+      heading:
+        ais.heading === null ||
+        ais.heading === undefined
+          ? null
+          : Number(
+              ais.heading
+            ),
+
+      waterBody:
+        ais.waterBody ||
+        ais.port ||
+        "",
+
+      navigationStatus:
+        ais.navigation_status ||
+        "",
+
+      source:
+        ais.source ||
+        "AIS",
+
+      sourceURL:
+        ais.source_url ||
+        DEFAULT_SOURCE_URL,
+
+      checkedAt:
+        ais.checked_at ||
+        null
+    };
 
 
     currentSourceURL =
