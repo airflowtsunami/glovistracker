@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,6 +22,7 @@
 >
 
 <style>
+
 * {
   box-sizing: border-box;
 }
@@ -178,6 +180,12 @@ button:hover {
   filter: drop-shadow(0 3px 4px rgba(0,0,0,.75));
 }
 
+.anchor-icon {
+  font-size: 30px;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.75));
+}
+
 .port-label {
   background: #10283b;
   color: white;
@@ -203,6 +211,16 @@ button:hover {
   border: 1px solid #8c2d0d;
   border-radius: 5px;
   padding: 3px 7px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.anchor-label {
+  background: #2d6fa3;
+  color: white;
+  border: 1px solid #173c5d;
+  border-radius: 5px;
+  padding: 4px 8px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -242,6 +260,7 @@ button:hover {
 }
 
 @keyframes pulseAIS {
+
   0% {
     box-shadow:
       0 0 0 0 rgba(255,212,0,.75),
@@ -262,6 +281,7 @@ button:hover {
 }
 
 @media (max-width: 600px) {
+
   .header {
     top: 5px;
     left: 5px;
@@ -321,6 +341,7 @@ button:hover {
     width: 190px;
   }
 }
+
 </style>
 </head>
 
@@ -367,7 +388,7 @@ button:hover {
 
   <div class="sliderLabels">
     <span>Last AIS</span>
-    <span>Pacific</span>
+    <span>Anchored</span>
     <span>Auckland</span>
   </div>
 
@@ -383,6 +404,7 @@ button:hover {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+
 
 /* =================================================
    VESSEL
@@ -416,9 +438,22 @@ const AUCKLAND = {
   lat: -36.8406,
   lng: 174.7850,
 
-  // 28 Aug 2026 11:00 NZST
-  // 1 Sep 2026 05:00 NZST, 31 Aug 2026 17:00 GMT
+  // Tuesday 1 September 2026
+  // 11:00 pm NZST
   time: new Date("2026-09-01T11:00:00Z")
+};
+
+
+/*
+   Estimated time MORNING CARA leaves anchorage
+   and begins final approach to Auckland.
+
+   Tuesday 1 September 2026
+   9:30 pm NZST
+*/
+
+const FINAL_APPROACH = {
+  time: new Date("2026-09-01T09:30:00Z")
 };
 
 
@@ -432,6 +467,15 @@ const shipIcon =
     className: "",
     iconSize: [44,44],
     iconAnchor: [22,22]
+  });
+
+
+const anchorIcon =
+  L.divIcon({
+    html: '<div class="anchor-icon">⚓</div>',
+    className: "",
+    iconSize: [40,40],
+    iconAnchor: [20,20]
   });
 
 
@@ -473,10 +517,6 @@ const map =
     zoomControl: true
   });
 
-
-L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
-);
 
 L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -611,13 +651,16 @@ const ship =
   .bindPopup(
     `
       <div class="boat-hover-photo">
+
         <img
           src="1.jpg"
           alt="MORNING CARA"
         >
+
         <div class="boat-hover-name">
           🚢 MORNING CARA
         </div>
+
       </div>
     `,
     {
@@ -700,11 +743,15 @@ function interpolate(a, b, fraction) {
   const f =
     Math.max(
       0,
-      Math.min(1, fraction)
+      Math.min(
+        1,
+        fraction
+      )
     );
 
 
   return {
+
     lat:
       a.lat +
       (b.lat - a.lat) * f,
@@ -712,6 +759,7 @@ function interpolate(a, b, fraction) {
     lng:
       a.lng +
       (b.lng - a.lng) * f
+
   };
 }
 
@@ -731,9 +779,16 @@ function distanceNm(lat1, lng1, lat2, lng2) {
 
 /* =================================================
    POSITION ESTIMATE
+
+   AIS → stationary at anchor → final approach → Auckland
    ================================================= */
 
 function getEstimatedPosition(selectedTime) {
+
+
+  /*
+     Before/latest AIS fix
+  */
 
   if (
     selectedTime <= latestAIS.time
@@ -747,6 +802,29 @@ function getEstimatedPosition(selectedTime) {
   }
 
 
+  /*
+     Ship remains stationary at the anchorage.
+
+     This intentionally does NOT interpolate the position.
+  */
+
+  if (
+    selectedTime < FINAL_APPROACH.time
+  ) {
+
+    return {
+      lat: latestAIS.lat,
+      lng: latestAIS.lng,
+      leg: "ANCHORED"
+    };
+  }
+
+
+  /*
+     Once arrival time has been reached,
+     show ship in Auckland.
+  */
+
   if (
     selectedTime >= AUCKLAND.time
   ) {
@@ -759,27 +837,35 @@ function getEstimatedPosition(selectedTime) {
   }
 
 
+  /*
+     Final approach.
+
+     Interpolate from the latest AIS anchorage position
+     to Auckland between 9:30 pm and 11:00 pm Tuesday.
+  */
+
   const fraction =
     (
       selectedTime -
-      latestAIS.time
+      FINAL_APPROACH.time
     )
     /
     (
       AUCKLAND.time -
-      latestAIS.time
+      FINAL_APPROACH.time
     );
 
 
   return {
+
     ...interpolate(
       latestAIS,
       AUCKLAND,
       fraction
     ),
 
-    leg:
-      "AIS_TO_AUCKLAND"
+    leg: "FINAL_APPROACH"
+
   };
 }
 
@@ -918,7 +1004,7 @@ function updateAISLabel() {
 
 
 /* =================================================
-   STATUS
+   STATUS / AIS RANGE
    ================================================= */
 
 function getAisRangeHint(p) {
@@ -937,7 +1023,7 @@ function getAisRangeHint(p) {
   ) {
 
     return (
-      ` · 📡 likely within Auckland terrestrial AIS range ` +
+      ` · 📡 within Auckland terrestrial AIS range ` +
       `(${distance.toFixed(0)} nm)`
     );
   }
@@ -984,6 +1070,60 @@ function updateVoyage(hours) {
   );
 
 
+  /*
+     Change the icon and tooltip to make the anchored
+     state visually obvious.
+  */
+
+  if (
+    p.leg === "ANCHORED"
+  ) {
+
+    ship.setIcon(
+      anchorIcon
+    );
+
+    ship.setTooltipContent(
+      "⚓ MORNING CARA · At anchor"
+    );
+
+  }
+  else {
+
+    ship.setIcon(
+      shipIcon
+    );
+
+
+    if (
+      p.leg === "FINAL_APPROACH"
+    ) {
+
+      ship.setTooltipContent(
+        "🚢 Final approach"
+      );
+
+    }
+    else if (
+      p.leg === "AUCKLAND"
+    ) {
+
+      ship.setTooltipContent(
+        "📍 Auckland"
+      );
+
+    }
+    else {
+
+      ship.setTooltipContent(
+        "Last real AIS position"
+      );
+
+    }
+
+  }
+
+
   document
     .getElementById(
       "dateDisplay"
@@ -999,6 +1139,7 @@ function updateVoyage(hours) {
 
   switch (p.leg) {
 
+
     case "AIS":
 
       status =
@@ -1007,10 +1148,18 @@ function updateVoyage(hours) {
       break;
 
 
-    case "AIS_TO_AUCKLAND":
+    case "ANCHORED":
 
       status =
-        "Estimated · latest AIS → Auckland";
+        "⚓ At anchor · stationary";
+
+      break;
+
+
+    case "FINAL_APPROACH":
+
+      status =
+        "🚢 Final approach · estimated";
 
       break;
 
@@ -1018,7 +1167,8 @@ function updateVoyage(hours) {
     default:
 
       status =
-        "📍 Auckland";
+        "📍 Auckland · docked";
+
   }
 
 
@@ -1069,13 +1219,55 @@ function updateVoyage(hours) {
 
 /* =================================================
    ROUTE DISPLAY
-   Shanghai → AIS → estimated position → Auckland
+
+   Shanghai
+     ↓
+   real AIS
+     ↓
+   stationary anchorage
+     ↓
+   final approach
+     ↓
+   Auckland
    ================================================= */
 
 function updateRouteLines(p) {
 
+
+  /*
+     At the AIS position or anchored.
+
+     Travelled line ends at the real position.
+     Dashed line shows the future route to Auckland.
+  */
+
   if (
-    p.leg === "AIS_TO_AUCKLAND"
+    p.leg === "AIS" ||
+    p.leg === "ANCHORED"
+  ) {
+
+    travelledLine.setLatLngs([
+      [SHANGHAI.lat, SHANGHAI.lng],
+      [latestAIS.lat, latestAIS.lng]
+    ]);
+
+
+    futureRoute.setLatLngs([
+      [latestAIS.lat, latestAIS.lng],
+      [AUCKLAND.lat, AUCKLAND.lng]
+    ]);
+
+
+    return;
+  }
+
+
+  /*
+     Ship has started final approach.
+  */
+
+  if (
+    p.leg === "FINAL_APPROACH"
   ) {
 
     travelledLine.setLatLngs([
@@ -1095,6 +1287,10 @@ function updateRouteLines(p) {
   }
 
 
+  /*
+     Vessel has arrived.
+  */
+
   if (
     p.leg === "AUCKLAND"
   ) {
@@ -1112,22 +1308,6 @@ function updateRouteLines(p) {
     return;
   }
 
-
-  /*
-     At the AIS fix, show the completed route
-     from Shanghai to the real AIS position.
-  */
-
-  travelledLine.setLatLngs([
-    [SHANGHAI.lat, SHANGHAI.lng],
-    [latestAIS.lat, latestAIS.lng]
-  ]);
-
-
-  futureRoute.setLatLngs([
-    [latestAIS.lat, latestAIS.lng],
-    [AUCKLAND.lat, AUCKLAND.lng]
-  ]);
 }
 
 
@@ -1360,6 +1540,7 @@ async function refreshAIS() {
       checkedAt:
         ais.checked_at ||
         null
+
     };
 
 
@@ -1428,6 +1609,43 @@ async function refreshAIS() {
 
       text +=
         ` · ${latestAIS.waterBody}`;
+    }
+
+
+    /*
+       Add a clear anchored indicator.
+
+       We show it when:
+       - AIS says at anchor, OR
+       - speed is very low
+       - and current time is before final approach.
+    */
+
+    const appearsAnchored =
+      (
+        latestAIS.navigationStatus
+          .toLowerCase()
+          .includes("anchor")
+      )
+      ||
+      (
+        Number.isFinite(
+          latestAIS.speed
+        ) &&
+        latestAIS.speed < 1
+      );
+
+
+    if (
+      appearsAnchored &&
+      Date.now() < FINAL_APPROACH.time.getTime()
+    ) {
+
+      text +=
+        `<br>
+         ⚓ <strong>Current status:</strong>
+         At anchor · stationary until final approach`;
+
     }
 
 
@@ -1524,6 +1742,7 @@ async function refreshAIS() {
     goToday();
 
     fitMap();
+
   }
 }
 
@@ -1760,3 +1979,4 @@ setInterval(
 
 </body>
 </html>
+```
