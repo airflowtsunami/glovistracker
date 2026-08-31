@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -34,6 +35,13 @@ MARINERADAR_URL = (
     "https://www.marineradar.com/vessel/"
     "mmsi-441148000/morning-cara"
 )
+
+
+POAL_ARRIVALS_URL = (
+    "https://www.poal.co.nz/operations/schedules/arrivals"
+)
+
+NZ_TZ = ZoneInfo("Pacific/Auckland")
 
 
 # ============================================================
@@ -1084,12 +1092,239 @@ def candidate_not_in_future(
 
 
 # ============================================================
+# PORTS OF AUCKLAND ETA
+# ============================================================
+
+def parse_poal_local_datetime(value):
+    """
+    POAL arrival times are displayed in Auckland local time.
+    Convert them to UTC for ais.json.
+    """
+    if not value:
+        return None
+
+    value = re.sub(r"\s+", " ", str(value)).strip()
+
+    for fmt in (
+        "%d %b %Y %H:%M",
+        "%d %B %Y %H:%M",
+    ):
+        try:
+            local_dt = datetime.strptime(value, fmt).replace(
+                tzinfo=NZ_TZ
+            )
+            return local_dt.astimezone(timezone.utc)
+        except ValueError:
+            pass
+
+    return None
+
+
+def strip_html_to_text(html):
+    """
+    Lightweight HTML-to-text conversion with no extra dependency.
+    """
+    text = re.sub(
+        r"(?is)<script\b.*?</script>",
+        " ",
+        html,
+    )
+    text = re.sub(
+        r"(?is)<style\b.*?</style>",
+        " ",
+        text,
+    )
+    text = re.sub(
+        r"(?s)<[^>]+>",
+        " ",
+        text,
+    )
+    text = (
+        text.replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&#39;", "'")
+        .replace("&quot;", '"')
+    )
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def get_poal_eta():
+    """
+    Get MORNING CARA's current Ports of Auckland expected arrival.
+
+    POAL defines the 'Arrival' field for expected arrivals as
+    pilot boarding time. POAL also says pilot station -> berth
+    is approximately 1.5 hours, so both times are returned.
+    """
+    print()
+    print("Checking Ports of Auckland ETA...")
+
+    result = {
+        "poal_eta": None,
+        "poal_pilot_boarding_eta": None,
+        "poal_berth_eta": None,
+        "poal_wharf": None,
+        "poal_vessel_ref": None,
+        "poal_schedule_updated_at": None,
+        "poal_source_url": POAL_ARRIVALS_URL,
+    }
+
+    try:
+        html = fetch_page(POAL_ARRIVALS_URL)
+        text = strip_html_to_text(html)
+
+        updated_match = re.search(
+            r"Last updated:\s*"
+            r"(\d{1,2}\s+"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+            r"\s+20\d{2}\s+\d{1,2}:\d{2})",
+            text,
+            re.IGNORECASE,
+        )
+
+        if updated_match:
+            updated_dt = parse_poal_local_datetime(
+                updated_match.group(1)
+            )
+            result["poal_schedule_updated_at"] = to_iso_z(
+                updated_dt
+            )
+
+        # Match the MORNING CARA row by vessel name + IMO.
+        row_match = re.search(
+            r"MORNING\s+CARA\s+"
+            r"(.*?)"
+            r"\b9574092\b"
+            r"(.*?)"
+            r"(?="
+            r"\b[A-Z][A-Z0-9 .()'\-]{2,}\s+\|?"
+            r"|$)",
+            text,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        # On the current POAL page the flattened row is:
+        # MORNING CARA ... Bledisloe West (B3) MOC4487 9574092
+        # OO635 OO635 Refer to Line Refer to Line
+        # 2 Sep 2026 18:00 4 Sep 2026 23:04 ...
+        #
+        # Rather than relying on the end-of-row expression above,
+        # use a bounded slice beginning at MORNING CARA if needed.
+        start = re.search(
+            r"\bMORNING\s+CARA\b",
+            text,
+            re.IGNORECASE,
+        )
+
+        if not start:
+            raise RuntimeError(
+                "MORNING CARA not found on POAL arrivals page"
+            )
+
+        vessel_slice = text[
+            start.start():
+            start.start() + 1400
+        ]
+
+        if "9574092" not in vessel_slice:
+            raise RuntimeError(
+                "MORNING CARA row found but IMO 9574092 was not nearby"
+            )
+
+        eta_match = re.search(
+            r"\b9574092\b"
+            r".{0,500}?"
+            r"(\d{1,2}\s+"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+            r"\s+20\d{2}\s+\d{1,2}:\d{2})",
+            vessel_slice,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if not eta_match:
+            raise RuntimeError(
+                "POAL arrival time not found in MORNING CARA row"
+            )
+
+        pilot_dt = parse_poal_local_datetime(
+            eta_match.group(1)
+        )
+
+        if pilot_dt is None:
+            raise RuntimeError(
+                "POAL arrival time could not be parsed"
+            )
+
+        berth_dt = pilot_dt + timedelta(
+            minutes=90
+        )
+
+        result["poal_eta"] = to_iso_z(
+            pilot_dt
+        )
+        result["poal_pilot_boarding_eta"] = to_iso_z(
+            pilot_dt
+        )
+        result["poal_berth_eta"] = to_iso_z(
+            berth_dt
+        )
+
+        wharf_match = re.search(
+            r"MORNING\s+CARA\s+"
+            r".{0,250}?"
+            r"([A-Za-z][A-Za-z ]+\([A-Z0-9]+\))"
+            r".{0,80}?"
+            r"(MOC\d+)"
+            r".{0,80}?"
+            r"\b9574092\b",
+            vessel_slice,
+            re.IGNORECASE | re.DOTALL,
+        )
+
+        if wharf_match:
+            result["poal_wharf"] = re.sub(
+                r"\s+",
+                " ",
+                wharf_match.group(1),
+            ).strip()
+
+            result["poal_vessel_ref"] = (
+                wharf_match.group(2).upper()
+            )
+
+        print(
+            "POAL pilot boarding ETA:",
+            result["poal_pilot_boarding_eta"],
+        )
+        print(
+            "POAL approximate berth ETA:",
+            result["poal_berth_eta"],
+        )
+
+        if result["poal_wharf"]:
+            print(
+                "POAL wharf:",
+                result["poal_wharf"],
+            )
+
+        return result
+
+    except Exception as exc:
+        print(
+            "Ports of Auckland ETA skipped:",
+            exc,
+        )
+        return None
+
+
+# ============================================================
 # OUTPUT RECORD
 # ============================================================
 
 def build_output(
     candidate,
     checked_at,
+    poal=None,
 ):
     fix_iso = to_iso_z(
         candidate["time_dt"]
@@ -1152,7 +1387,89 @@ def build_output(
 
         "checked_at":
             checked_at,
+
+        "poal_eta":
+            (poal or {}).get("poal_eta"),
+
+        "poal_pilot_boarding_eta":
+            (poal or {}).get(
+                "poal_pilot_boarding_eta"
+            ),
+
+        "poal_berth_eta":
+            (poal or {}).get(
+                "poal_berth_eta"
+            ),
+
+        "poal_wharf":
+            (poal or {}).get("poal_wharf"),
+
+        "poal_vessel_ref":
+            (poal or {}).get(
+                "poal_vessel_ref"
+            ),
+
+        "poal_schedule_updated_at":
+            (poal or {}).get(
+                "poal_schedule_updated_at"
+            ),
+
+        "poal_source_url":
+            (poal or {}).get(
+                "poal_source_url",
+                POAL_ARRIVALS_URL,
+            ),
     }
+
+
+def apply_poal_to_record(record, poal):
+    if record is None:
+        return None
+
+    # A failed POAL fetch must not erase the last good schedule.
+    if not poal:
+        return record
+
+    record["poal_eta"] = (
+        poal.get("poal_eta")
+        if poal.get("poal_eta") is not None
+        else record.get("poal_eta")
+    )
+    record["poal_pilot_boarding_eta"] = (
+        poal.get("poal_pilot_boarding_eta")
+        if poal.get("poal_pilot_boarding_eta") is not None
+        else record.get("poal_pilot_boarding_eta")
+    )
+    record["poal_berth_eta"] = (
+        poal.get("poal_berth_eta")
+        if poal.get("poal_berth_eta") is not None
+        else record.get("poal_berth_eta")
+    )
+    record["poal_wharf"] = (
+        poal.get("poal_wharf")
+        if poal.get("poal_wharf") is not None
+        else record.get("poal_wharf")
+    )
+    record["poal_vessel_ref"] = (
+        poal.get("poal_vessel_ref")
+        if poal.get("poal_vessel_ref") is not None
+        else record.get("poal_vessel_ref")
+    )
+    record["poal_schedule_updated_at"] = (
+        poal.get("poal_schedule_updated_at")
+        if poal.get("poal_schedule_updated_at") is not None
+        else record.get("poal_schedule_updated_at")
+    )
+    record["poal_source_url"] = (
+        (poal or {}).get(
+            "poal_source_url",
+            record.get(
+                "poal_source_url",
+                POAL_ARRIVALS_URL,
+            ),
+        )
+    )
+    return record
 
 
 # ============================================================
@@ -1173,6 +1490,11 @@ def main():
     print("=" * 65)
 
     existing = load_existing()
+
+    # POAL schedule is independent of AIS freshness.
+    # Fetch it every run so an ETA change is saved even when
+    # no newer vessel position is available.
+    poal = get_poal_eta()
 
     candidates = []
 
@@ -1264,6 +1586,11 @@ def main():
         if existing:
             existing["checked_at"] = (
                 checked_at
+            )
+
+            apply_poal_to_record(
+                existing,
+                poal,
             )
 
             save_record(existing)
@@ -1406,6 +1733,11 @@ def main():
             checked_at
         )
 
+        apply_poal_to_record(
+            existing,
+            poal,
+        )
+
         save_record(existing)
 
         print()
@@ -1422,7 +1754,21 @@ def main():
     record = build_output(
         newest,
         checked_at,
+        poal,
     )
+
+    if not poal and existing:
+        for key in (
+            "poal_eta",
+            "poal_pilot_boarding_eta",
+            "poal_berth_eta",
+            "poal_wharf",
+            "poal_vessel_ref",
+            "poal_schedule_updated_at",
+            "poal_source_url",
+        ):
+            if existing.get(key) is not None:
+                record[key] = existing.get(key)
 
     save_record(record)
 
