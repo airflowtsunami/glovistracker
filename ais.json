@@ -15,12 +15,12 @@
   "source": "MarineRadar terrestrial AIS",
   "source_url": "https://www.marineradar.com/vessel/mmsi-441148000/morning-cara",
   "timestamp_approximate": false,
-  "checked_at": "2026-08-31T22:27:47Z",
+  "checked_at": "2026-09-01T00:08:51Z",
   "poal_eta": "2026-09-02T06:00:00Z",
   "poal_pilot_boarding_eta": "2026-09-02T06:00:00Z",
   "poal_berth_eta": "2026-09-02T07:30:00Z",
   "poal_wharf": "ARANUI SHIPPING LIMITED Bledisloe West (B3)",
   "poal_vessel_ref": "MOC4487",
-  "poal_schedule_updated_at": "2026-08-31T21:30:00Z",
+  "poal_schedule_updated_at": "2026-08-31T23:30:00Z",
   "poal_source_url": "https://www.poal.co.nz/operations/schedules/arrivals"
 }
