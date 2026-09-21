@@ -1,9 +1,9 @@
 name: Update Boat AIS
 
 on:
-  schedule:
+  #schedule:
     # Run at 7, 27, 47 and 57 minutes past every hour.
-    - cron: "7,27,47,57 * * * *"
+    #- cron: "7,27,47,57 * * * *"
 
   # Allows manual runs from GitHub Actions.
   workflow_dispatch:
